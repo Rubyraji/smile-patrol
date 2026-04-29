@@ -1,131 +1,142 @@
-import { useHabits } from "@/lib/store";
-import { currentStreak, isDueOn, isCompletedOn } from "@/lib/streaks";
-import { format } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check } from "lucide-react";
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
+import { Link } from 'wouter';
+import { Sparkles, Flame, Play } from 'lucide-react';
+import { format } from 'date-fns';
+import { useKids, getCurrentSession, getWeekDays, countWeekBrushings, getStreak } from '@/lib/store';
+import { WeekGrid } from '@/components/week-grid';
+import { KidSwitcher } from '@/components/kid-switcher';
+import { Button } from '@/components/ui/button';
 
-export default function Today() {
-  const { habits, toggleCompletion } = useHabits();
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
+export default function Home() {
+  const { kids, activeKid, activeId, setActiveId, toggleSession, addKid } = useKids();
+  const weekDays = getWeekDays();
+  const session = getCurrentSession();
 
-  const dueHabits = habits.filter(h => isDueOn(h, todayStr));
-
-  if (habits.length === 0) {
+  if (kids.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
-            <span className="text-3xl">🌱</span>
-          </div>
-          <h1 className="text-3xl font-serif text-foreground">What's one thing you want to do more of?</h1>
-          <p className="text-muted-foreground max-w-sm mx-auto">
-            Start small. A tiny habit done consistently is better than a huge goal done once.
+      <div className="min-h-screen flex items-center justify-center px-6 pb-24">
+        <div className="text-center max-w-sm">
+          <div className="text-6xl mb-4">🪥</div>
+          <h1 className="text-2xl font-bold mb-2">Welcome!</h1>
+          <p className="text-muted-foreground mb-6">
+            Let's add your first little brusher to get started.
           </p>
-          <Link href="/habits/new" className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors">
-            Add a habit
-          </Link>
-        </motion.div>
+          <Button
+            size="lg"
+            onClick={() => addKid('Kiddo')}
+            data-testid="empty-add-kid"
+            className="rounded-full"
+          >
+            Add a kid
+          </Button>
+        </div>
       </div>
     );
   }
 
+  if (!activeKid) return null;
+
+  const weekCount = countWeekBrushings(activeKid, weekDays);
+  const weekTotal = 14;
+  const weekPct = (weekCount / weekTotal) * 100;
+  const streak = getStreak(activeKid);
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const todayRec = activeKid.brushings[today] ?? {};
+  const sessionDone = !!todayRec[session];
+
   return (
-    <div className="pt-12 pb-24 px-6 max-w-md mx-auto min-h-screen">
-      <header className="mb-8">
-        <h1 className="text-4xl font-serif mb-2">Today</h1>
-        <p className="text-muted-foreground">{format(new Date(), 'EEEE, MMMM d')}</p>
+    <div className="min-h-screen pb-32">
+      <header className="px-5 pt-6 pb-4 sticky top-0 z-10 bg-background/85 backdrop-blur-md">
+        <div className="max-w-md mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {format(new Date(), 'EEEE, MMM d')}
+              </p>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <span>🪥</span>
+                <span>Brush Buddies</span>
+              </h1>
+            </div>
+          </div>
+          <KidSwitcher kids={kids} activeId={activeId} onSelect={setActiveId} />
+        </div>
       </header>
 
-      {dueHabits.length === 0 ? (
-        <div className="py-12 text-center">
-          <p className="text-muted-foreground">No habits due today. Enjoy the rest!</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <AnimatePresence>
-            {dueHabits.map((habit, index) => {
-              const isCompleted = isCompletedOn(habit, todayStr);
-              const streak = currentStreak(habit, todayStr);
-              
-              return (
-                <motion.div
-                  key={habit.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`group relative flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                    isCompleted 
-                      ? 'bg-primary/5 border-primary/20' 
-                      : 'bg-card border-border hover:border-primary/30 shadow-sm hover:shadow-md'
-                  }`}
+      <main className="px-5 max-w-md mx-auto space-y-5">
+        {/* Hero card */}
+        <div
+          className="rounded-3xl p-5 relative overflow-hidden"
+          style={{
+            background: `linear-gradient(135deg, ${activeKid.color}33, ${activeKid.color}11)`,
+            border: `1.5px solid ${activeKid.color}55`,
+          }}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span
+                  className="text-2xl w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: activeKid.color }}
                 >
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => toggleCompletion(habit.id, todayStr)}
-                      className={`relative w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
-                        isCompleted 
-                          ? 'bg-primary border-primary text-primary-foreground' 
-                          : 'border-muted-foreground/30 hover:border-primary'
-                      }`}
-                    >
-                      <AnimatePresence>
-                        {isCompleted && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0 }}
-                          >
-                            <Check className="w-4 h-4" />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      {/* Check burst animation */}
-                      {isCompleted && (
-                        <motion.div
-                          initial={{ scale: 1, opacity: 0.5 }}
-                          animate={{ scale: 1.5, opacity: 0 }}
-                          transition={{ duration: 0.4 }}
-                          className="absolute inset-0 bg-primary rounded-full"
-                        />
-                      )}
-                    </button>
-                    
-                    <div>
-                      <h3 className={`font-medium transition-colors ${isCompleted ? 'text-primary opacity-80' : 'text-foreground'}`}>
-                        {habit.emoji} {habit.name}
-                      </h3>
-                      {habit.target && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{habit.target}</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {streak > 0 && (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background border border-border/50 text-xs font-medium text-muted-foreground shadow-sm">
-                      <span className="text-orange-500">🔥</span>
-                      {streak}
-                    </div>
-                  )}
-                  
-                  {/* Invisible link overlay for details */}
-                  <Link href={`/habits/${habit.id}`} className="absolute inset-0" aria-label={`View ${habit.name} details`} />
-                  {/* Keep the check button interactive above the link */}
-                  <div className="absolute left-4 w-8 h-8 z-10" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => {
-                    e.preventDefault();
-                    toggleCompletion(habit.id, todayStr);
-                  }} />
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                  {activeKid.emoji}
+                </span>
+                <h2 className="text-xl font-bold truncate" data-testid="active-kid-name">
+                  {activeKid.name}
+                </h2>
+              </div>
+              <p className="text-sm text-foreground/80">
+                {sessionDone
+                  ? `Great job! ${session === 'morning' ? 'Morning' : 'Evening'} brush is done. ✨`
+                  : `Time for ${session === 'morning' ? 'morning' : 'evening'} brushing!`}
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              <div className="flex items-center gap-1 text-orange-500 font-bold text-lg" data-testid="streak-count">
+                <Flame className="h-5 w-5 fill-orange-400" />
+                {streak}
+              </div>
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+                day streak
+              </span>
+            </div>
+          </div>
+
+          <Link href="/brush">
+            <Button
+              size="lg"
+              data-testid="start-brushing-button"
+              className="w-full mt-5 rounded-2xl h-14 text-base font-bold shadow-md gap-2"
+              style={{ backgroundColor: activeKid.color, color: '#fff' }}
+            >
+              <Play className="h-5 w-5 fill-white" />
+              Start Brushing
+            </Button>
+          </Link>
         </div>
-      )}
+
+        {/* Week progress */}
+        <section>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h3 className="font-bold flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-primary" />
+              This week
+            </h3>
+            <span className="text-sm font-semibold text-muted-foreground" data-testid="week-progress-text">
+              {weekCount} / {weekTotal} brushes
+            </span>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden mb-4">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${weekPct}%`, backgroundColor: activeKid.color }}
+            />
+          </div>
+          <WeekGrid kid={activeKid} onToggle={(d, s) => toggleSession(activeKid.id, d, s)} />
+          <p className="text-xs text-muted-foreground text-center mt-3">
+            Tap any cell to mark a brush manually.
+          </p>
+        </section>
+      </main>
     </div>
   );
 }

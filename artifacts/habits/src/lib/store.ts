@@ -1,115 +1,200 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { nanoid } from 'nanoid';
-import { format, subDays } from 'date-fns';
+import { format, startOfWeek, addDays } from 'date-fns';
 
-export type Habit = {
+export type Session = 'morning' | 'afternoon';
+export type BrushRecord = Partial<Record<Session, boolean>>;
+
+export type Kid = {
   id: string;
   name: string;
   emoji: string;
-  frequency: { type: 'daily' } | { type: 'weekly'; days: number[] };
-  target?: string;
-  reminderTime?: string;
-  createdAt: string;
-  completions: string[];
+  color: string;
+  brushings: Record<string, BrushRecord>;
 };
 
-const STORAGE_KEY = 'habits.v1';
-const SEED_FLAG_KEY = 'habits.seeded.v1';
+const STORAGE_KEY = 'brush.kids.v1';
+const ACTIVE_KEY = 'brush.activeKid.v1';
+const SEED_KEY = 'brush.seeded.v1';
 
-function getInitialHabits(): Habit[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (e) {
-    console.error('Failed to parse stored habits', e);
-  }
+export const KID_EMOJIS = ['🦄', '🦁', '🐼', '🐯', '🦊', '🐰', '🐻', '🐸', '🐵', '🐨', '🐶', '🐱'];
+export const KID_COLORS = ['#F472B6', '#FBBF24', '#60A5FA', '#34D399', '#A78BFA', '#FB923C', '#F87171', '#22D3EE'];
 
-  // Check if we already seeded
-  if (localStorage.getItem(SEED_FLAG_KEY)) {
-    return [];
-  }
-
-  // Seed initial data
-  const today = new Date();
-  const seedHabits: Habit[] = [
+function seedKids(): Kid[] {
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const yesterday = format(addDays(new Date(), -1), 'yyyy-MM-dd');
+  return [
     {
       id: nanoid(),
-      name: 'Read',
-      emoji: '📚',
-      frequency: { type: 'daily' },
-      target: '15 pages',
-      createdAt: format(subDays(today, 30), 'yyyy-MM-dd'),
-      completions: Array.from({ length: 20 }, (_, i) => format(subDays(today, i + 2), 'yyyy-MM-dd'))
+      name: 'Lily',
+      emoji: '🦄',
+      color: '#F472B6',
+      brushings: {
+        [today]: { morning: true },
+        [yesterday]: { morning: true, afternoon: true },
+      },
     },
     {
       id: nanoid(),
-      name: 'Walk',
-      emoji: '🚶',
-      frequency: { type: 'daily' },
-      target: '30 mins',
-      createdAt: format(subDays(today, 15), 'yyyy-MM-dd'),
-      completions: Array.from({ length: 14 }, (_, i) => format(subDays(today, i + 1), 'yyyy-MM-dd'))
+      name: 'Max',
+      emoji: '🦁',
+      color: '#FBBF24',
+      brushings: {
+        [yesterday]: { morning: true },
+      },
     },
-    {
-      id: nanoid(),
-      name: 'Morning pages',
-      emoji: '✍️',
-      frequency: { type: 'weekly', days: [1, 2, 3, 4, 5] },
-      createdAt: format(subDays(today, 60), 'yyyy-MM-dd'),
-      completions: Array.from({ length: 30 }, (_, i) => format(subDays(today, i * 2 + 1), 'yyyy-MM-dd'))
-    }
   ];
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(seedHabits));
-  localStorage.setItem(SEED_FLAG_KEY, 'true');
-  return seedHabits;
 }
 
-export function useHabits() {
-  const [habits, setHabits] = useState<Habit[]>(getInitialHabits);
+function loadKids(): Kid[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Failed to load kids', e);
+  }
+  if (localStorage.getItem(SEED_KEY)) return [];
+  const seed = seedKids();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+  localStorage.setItem(SEED_KEY, '1');
+  return seed;
+}
+
+export function useKids() {
+  const [kids, setKids] = useState<Kid[]>(loadKids);
+  const [activeId, setActiveIdState] = useState<string | null>(() => {
+    const stored = localStorage.getItem(ACTIVE_KEY);
+    if (stored) return stored;
+    const initial = loadKids();
+    return initial[0]?.id ?? null;
+  });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
-  }, [habits]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(kids));
+  }, [kids]);
 
-  const addHabit = (habit: Omit<Habit, 'id' | 'createdAt' | 'completions'>) => {
-    const newHabit: Habit = {
-      ...habit,
-      id: nanoid(),
-      createdAt: format(new Date(), 'yyyy-MM-dd'),
-      completions: []
-    };
-    setHabits(prev => [...prev, newHabit]);
-  };
+  useEffect(() => {
+    if (activeId) localStorage.setItem(ACTIVE_KEY, activeId);
+  }, [activeId]);
 
-  const updateHabit = (id: string, updates: Partial<Omit<Habit, 'id' | 'createdAt' | 'completions'>>) => {
-    setHabits(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h));
-  };
+  useEffect(() => {
+    if (kids.length === 0) {
+      if (activeId !== null) setActiveIdState(null);
+      return;
+    }
+    if (!activeId || !kids.find((k) => k.id === activeId)) {
+      setActiveIdState(kids[0].id);
+    }
+  }, [kids, activeId]);
 
-  const deleteHabit = (id: string) => {
-    setHabits(prev => prev.filter(h => h.id !== id));
-  };
+  const setActiveId = useCallback((id: string) => setActiveIdState(id), []);
 
-  const toggleCompletion = (habitId: string, dateStr: string) => {
-    setHabits(prev => prev.map(h => {
-      if (h.id !== habitId) return h;
-      
-      const isCompleted = h.completions.includes(dateStr);
-      const newCompletions = isCompleted
-        ? h.completions.filter(d => d !== dateStr)
-        : [...h.completions, dateStr];
-        
-      return { ...h, completions: newCompletions };
-    }));
-  };
+  const addKid = useCallback(
+    (name: string, emoji?: string, color?: string) => {
+      const id = nanoid();
+      setKids((prev) => {
+        const newKid: Kid = {
+          id,
+          name: name.trim() || 'Kiddo',
+          emoji: emoji ?? KID_EMOJIS[prev.length % KID_EMOJIS.length],
+          color: color ?? KID_COLORS[prev.length % KID_COLORS.length],
+          brushings: {},
+        };
+        return [...prev, newKid];
+      });
+      setActiveIdState(id);
+      return id;
+    },
+    []
+  );
+
+  const removeKid = useCallback((id: string) => {
+    setKids((prev) => prev.filter((k) => k.id !== id));
+  }, []);
+
+  const updateKid = useCallback(
+    (id: string, updates: Partial<Pick<Kid, 'name' | 'emoji' | 'color'>>) => {
+      setKids((prev) => prev.map((k) => (k.id === id ? { ...k, ...updates } : k)));
+    },
+    []
+  );
+
+  const setSession = useCallback(
+    (kidId: string, dateStr: string, session: Session, value: boolean) => {
+      setKids((prev) =>
+        prev.map((k) => {
+          if (k.id !== kidId) return k;
+          const day = k.brushings[dateStr] ?? {};
+          const next: BrushRecord = { ...day, [session]: value };
+          return { ...k, brushings: { ...k.brushings, [dateStr]: next } };
+        })
+      );
+    },
+    []
+  );
+
+  const toggleSession = useCallback(
+    (kidId: string, dateStr: string, session: Session) => {
+      setKids((prev) =>
+        prev.map((k) => {
+          if (k.id !== kidId) return k;
+          const day = k.brushings[dateStr] ?? {};
+          const next: BrushRecord = { ...day, [session]: !day[session] };
+          return { ...k, brushings: { ...k.brushings, [dateStr]: next } };
+        })
+      );
+    },
+    []
+  );
+
+  const activeKid = kids.find((k) => k.id === activeId) ?? null;
 
   return {
-    habits,
-    addHabit,
-    updateHabit,
-    deleteHabit,
-    toggleCompletion
+    kids,
+    activeKid,
+    activeId,
+    setActiveId,
+    addKid,
+    removeKid,
+    updateKid,
+    setSession,
+    toggleSession,
   };
+}
+
+export function getCurrentSession(): Session {
+  const h = new Date().getHours();
+  return h < 12 ? 'morning' : 'afternoon';
+}
+
+export function getWeekDays(date: Date = new Date()): Date[] {
+  const start = startOfWeek(date, { weekStartsOn: 1 });
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
+export function countWeekBrushings(kid: Kid, weekDays: Date[]): number {
+  let count = 0;
+  for (const d of weekDays) {
+    const key = format(d, 'yyyy-MM-dd');
+    const rec = kid.brushings[key];
+    if (rec?.morning) count++;
+    if (rec?.afternoon) count++;
+  }
+  return count;
+}
+
+export function getStreak(kid: Kid): number {
+  let streak = 0;
+  let cursor = new Date();
+  for (let i = 0; i < 365; i++) {
+    const key = format(cursor, 'yyyy-MM-dd');
+    const rec = kid.brushings[key];
+    if (rec?.morning && rec?.afternoon) {
+      streak++;
+      cursor = addDays(cursor, -1);
+    } else {
+      break;
+    }
+  }
+  return streak;
 }

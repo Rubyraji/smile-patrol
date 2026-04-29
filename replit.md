@@ -4,6 +4,12 @@
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
+## Apps
+
+- **`artifacts/habits` — Brush Buddies**: A kid-friendly tooth brushing tracker. Tracks morning/evening brushing per kid in a weekly grid, with a 2-minute interactive timer dial. Multi-kid support with avatars/colors. State stored in localStorage. Routes: `/` (home + week grid), `/brush` (timer), `/kids` (manage kids).
+- **`artifacts/api-server`**: Express API server (currently unused by Brush Buddies).
+- **`artifacts/mockup-sandbox`**: Canvas mockup sandbox.
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces
