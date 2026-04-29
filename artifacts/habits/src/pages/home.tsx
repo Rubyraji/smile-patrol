@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'wouter';
-import { Sparkles, Flame, Play } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 import {
   useKids,
-  getCurrentSession,
   getWeekDays,
   getStreak,
   getWeekStartKey,
@@ -19,6 +18,7 @@ import { KidSwitcher } from '@/components/kid-switcher';
 import { RewardCard } from '@/components/reward-card';
 import { StickerCollection } from '@/components/sticker-collection';
 import { RewardCelebration } from '@/components/reward-celebration';
+import { TodayChecklist } from '@/components/today-checklist';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
@@ -34,7 +34,6 @@ export default function Home() {
   } = useKids();
   const weekDays = getWeekDays();
   const weekStartKey = getWeekStartKey();
-  const session = getCurrentSession();
 
   const [celebration, setCelebration] = useState<Reward | null>(null);
   const lastClaimedRef = useRef<Set<string>>(new Set());
@@ -77,9 +76,6 @@ export default function Home() {
 
   const progress = getWeekProgress(activeKid, weekDays);
   const streak = getStreak(activeKid);
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const todayRec = activeKid.brushings[today] ?? {};
-  const sessionDone = !!todayRec[session];
 
   const currentWeekReward = getWeekReward(activeKid, weekStartKey);
   const weekDone = isWeekComplete(activeKid, weekDays);
@@ -113,59 +109,51 @@ export default function Home() {
       </header>
 
       <main className="px-5 max-w-md mx-auto space-y-5">
-        {/* Hero card */}
+        {/* Slim hero — kid greeting + streak */}
         <div
-          className="rounded-3xl p-5 relative overflow-hidden"
+          className="rounded-3xl p-4 relative overflow-hidden"
           style={{
             background: `linear-gradient(135deg, ${activeKid.color}33, ${activeKid.color}11)`,
             border: `1.5px solid ${activeKid.color}55`,
           }}
         >
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <motion.span
+              animate={{ rotate: [0, -10, 10, -10, 0] }}
+              transition={{ duration: 1.4, repeat: Infinity, repeatDelay: 5, ease: 'easeInOut' }}
+              className="text-3xl w-14 h-14 rounded-full flex items-center justify-center shrink-0 shadow-sm"
+              style={{ backgroundColor: activeKid.color }}
+            >
+              {activeKid.emoji}
+            </motion.span>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span
-                  className="text-2xl w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: activeKid.color }}
-                >
-                  {activeKid.emoji}
-                </span>
-                <h2 className="text-xl font-bold truncate" data-testid="active-kid-name">
-                  {activeKid.name}
-                </h2>
-              </div>
-              <p className="text-sm text-foreground/80">
-                {sessionDone
-                  ? `Great job! ${session === 'morning' ? 'Morning' : 'Evening'} brush is done. ✨`
-                  : `Time for ${session === 'morning' ? 'morning' : 'evening'} brushing!`}
-              </p>
+              <p className="text-xs font-semibold text-muted-foreground">Hi there!</p>
+              <h2 className="text-2xl font-bold truncate leading-tight" data-testid="active-kid-name">
+                {activeKid.name}
+              </h2>
             </div>
-            <div className="flex flex-col items-end gap-1 shrink-0">
+            <div className="flex flex-col items-center gap-0.5 shrink-0 px-2">
               <div
-                className="flex items-center gap-1 text-orange-500 font-bold text-lg"
+                className="flex items-center gap-1 text-orange-500 font-bold text-xl"
                 data-testid="streak-count"
               >
-                <Flame className="h-5 w-5 fill-orange-400" />
+                <Flame className="h-6 w-6 fill-orange-400" />
                 {streak}
               </div>
-              <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+              <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide">
                 day streak
               </span>
             </div>
           </div>
-
-          <Link href="/brush">
-            <Button
-              size="lg"
-              data-testid="start-brushing-button"
-              className="w-full mt-5 rounded-2xl h-14 text-base font-bold shadow-md gap-2"
-              style={{ backgroundColor: activeKid.color, color: '#fff' }}
-            >
-              <Play className="h-5 w-5 fill-white" />
-              Start Brushing
-            </Button>
-          </Link>
         </div>
+
+        {/* TODAY — primary kid surface */}
+        <TodayChecklist
+          kid={activeKid}
+          onToggleTask={(taskId, dateStr) =>
+            toggleTaskCompletion(activeKid.id, taskId, dateStr)
+          }
+        />
 
         {/* Weekly reward */}
         <RewardCard
@@ -176,41 +164,35 @@ export default function Home() {
           onClaim={handleClaim}
         />
 
-        {/* Week progress grid */}
-        <section>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h3 className="font-bold flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-primary" />
-              This week
-            </h3>
-            <span
-              className="text-sm font-semibold text-muted-foreground"
-              data-testid="week-progress-text"
-            >
-              {progress.brushDone} / {progress.brushTotal} brushes
-            </span>
-          </div>
-          <WeekGrid kid={activeKid} onToggle={(d, s) => toggleSession(activeKid.id, d, s)} />
-          <p className="text-xs text-muted-foreground text-center mt-3">
-            Tap any cell to mark a brush manually.
-          </p>
-        </section>
-
-        {/* Daily extras (flossing, tooth cream, etc.) */}
-        {activeKid.tasks.length > 0 && (
-          <section>
-            <TaskWeekGrid
-              kid={activeKid}
-              onToggle={(taskId, dateStr) => toggleTaskCompletion(activeKid.id, taskId, dateStr)}
-            />
-            <p className="text-xs text-muted-foreground text-center mt-3">
-              Manage daily extras in <span className="font-semibold">Kids → Edit</span>.
-            </p>
-          </section>
-        )}
-
-        {/* Sticker collection */}
+        {/* Sticker collection — kids love seeing their stickers */}
         <StickerCollection rewards={activeKid.rewards} color={activeKid.color} />
+
+        {/* Parent view — week grid (smaller, subdued) */}
+        <details className="rounded-2xl border bg-card overflow-hidden group">
+          <summary className="px-4 py-3 cursor-pointer list-none flex items-center justify-between font-semibold text-sm text-muted-foreground hover:bg-muted/40 transition">
+            <span>This week's history</span>
+            <span className="text-xs">
+              {progress.brushDone} / {progress.brushTotal} brushes
+              <span className="ml-2 inline-block group-open:rotate-180 transition-transform">
+                ▾
+              </span>
+            </span>
+          </summary>
+          <div className="px-4 pb-4 pt-1 space-y-4">
+            <WeekGrid kid={activeKid} onToggle={(d, s) => toggleSession(activeKid.id, d, s)} />
+            {activeKid.tasks.length > 0 && (
+              <TaskWeekGrid
+                kid={activeKid}
+                onToggle={(taskId, dateStr) =>
+                  toggleTaskCompletion(activeKid.id, taskId, dateStr)
+                }
+              />
+            )}
+            <p className="text-[11px] text-muted-foreground text-center">
+              Tap any cell to mark or unmark.
+            </p>
+          </div>
+        </details>
       </main>
 
       <RewardCelebration
