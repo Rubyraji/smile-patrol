@@ -25,6 +25,18 @@ export function TodayChecklist({ kid, onToggleTask }: Props) {
   const brushings = kid.brushings[today] ?? {};
   const taskComps = kid.taskCompletions[today] ?? {};
 
+  const anytimeTasks = kid.tasks.filter((t) => t.time !== 'night');
+  const nightTasks = kid.tasks.filter((t) => t.time === 'night');
+
+  const taskToGoal = (t: (typeof kid.tasks)[number], hint: string): Goal => ({
+    id: `task-${t.id}`,
+    emoji: t.emoji,
+    label: t.name,
+    hint,
+    done: !!taskComps[t.id],
+    kind: 'task',
+  });
+
   const goals: Goal[] = [
     {
       id: 'morning',
@@ -34,14 +46,7 @@ export function TodayChecklist({ kid, onToggleTask }: Props) {
       done: !!brushings.morning,
       kind: 'brush',
     },
-    ...kid.tasks.map<Goal>((t) => ({
-      id: `task-${t.id}`,
-      emoji: t.emoji,
-      label: t.name,
-      hint: 'Tap when finished',
-      done: !!taskComps[t.id],
-      kind: 'task',
-    })),
+    ...anytimeTasks.map((t) => taskToGoal(t, 'Tap when finished')),
     {
       id: 'evening',
       emoji: '🌙',
@@ -50,6 +55,7 @@ export function TodayChecklist({ kid, onToggleTask }: Props) {
       done: !!brushings.afternoon,
       kind: 'brush',
     },
+    ...nightTasks.map((t) => taskToGoal(t, 'Do this right after the bedtime brush')),
   ];
 
   const doneCount = goals.filter((g) => g.done).length;

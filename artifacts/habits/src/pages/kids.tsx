@@ -7,11 +7,14 @@ import {
   KID_COLORS,
   TASK_PRESETS,
   TASK_EMOJIS,
+  QUICK_TOGGLE_PRESETS,
   type Kid,
   type Task,
+  type TaskTime,
 } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,7 +98,7 @@ export default function Kids() {
               setAdding(false);
             }
           }}
-          onAddTask={(name, emoji) => editing && addTask(editing.id, name, emoji)}
+          onAddTask={(name, emoji, time) => editing && addTask(editing.id, name, emoji, time)}
           onUpdateTask={(taskId, updates) => editing && updateTask(editing.id, taskId, updates)}
           onRemoveTask={(taskId) => editing && removeTask(editing.id, taskId)}
           onDelete={
@@ -148,7 +151,7 @@ function KidEditor({
   kid: Kid | null;
   onClose: () => void;
   onSaveProfile: (name: string, emoji: string, color: string) => void;
-  onAddTask: (name: string, emoji: string) => void;
+  onAddTask: (name: string, emoji: string, time?: TaskTime) => void;
   onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'name' | 'emoji'>>) => void;
   onRemoveTask: (taskId: string) => void;
   onDelete?: () => void;
@@ -177,6 +180,9 @@ function KidEditor({
     setTaskDraftEmoji(TASK_EMOJIS[0]);
     setShowTaskComposer(false);
   };
+
+  const findTaskByName = (name: string) =>
+    tasks.find((t) => t.name.toLowerCase() === name.toLowerCase());
 
   return (
     <div
@@ -285,6 +291,48 @@ function KidEditor({
                 Add habits like flossing or tooth cream that {kid.name} should do once a day.
               </p>
 
+              {/* Quick on/off toggles for the most common extras */}
+              <div className="space-y-2 mb-4">
+                {QUICK_TOGGLE_PRESETS.map((preset) => {
+                  const existing = findTaskByName(preset.name);
+                  const enabled = !!existing;
+                  return (
+                    <div
+                      key={preset.key}
+                      className={cn(
+                        'flex items-center gap-3 p-3 rounded-2xl border-2 transition-colors',
+                        enabled
+                          ? 'border-primary/40 bg-primary/5'
+                          : 'border-border bg-card',
+                      )}
+                      data-testid={`quick-toggle-${preset.key}`}
+                    >
+                      <div className="w-11 h-11 rounded-xl bg-muted flex items-center justify-center text-2xl shrink-0">
+                        {preset.emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold leading-tight">{preset.title}</p>
+                        <p className="text-[11px] text-muted-foreground leading-snug">
+                          {preset.subtitle}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={enabled}
+                        onCheckedChange={(checked) => {
+                          if (checked && !existing) {
+                            onAddTask(preset.name, preset.emoji, preset.time);
+                          } else if (!checked && existing) {
+                            onRemoveTask(existing.id);
+                          }
+                        }}
+                        aria-label={preset.title}
+                        data-testid={`quick-toggle-switch-${preset.key}`}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
               {/* Existing tasks */}
               {tasks.length > 0 && (
                 <div className="space-y-2 mb-3">
@@ -306,14 +354,16 @@ function KidEditor({
                   Quick add
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {TASK_PRESETS.map((preset) => {
+                  {TASK_PRESETS.filter(
+                    (p) => !QUICK_TOGGLE_PRESETS.some((q) => q.name === p.name),
+                  ).map((preset) => {
                     const exists = presetExists(preset.name);
                     return (
                       <button
                         key={preset.name}
                         type="button"
                         disabled={exists}
-                        onClick={() => onAddTask(preset.name, preset.emoji)}
+                        onClick={() => onAddTask(preset.name, preset.emoji, preset.time)}
                         data-testid={`preset-${preset.name.toLowerCase().replace(/\s+/g, '-')}`}
                         className={cn(
                           'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 text-sm font-semibold transition',

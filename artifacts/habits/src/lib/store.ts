@@ -12,10 +12,13 @@ export type Reward = {
   unlockedAt: string; // ISO
 };
 
+export type TaskTime = 'anytime' | 'night';
+
 export type Task = {
   id: string;
   name: string;
   emoji: string;
+  time: TaskTime;
 };
 
 export type Kid = {
@@ -29,13 +32,40 @@ export type Kid = {
   taskCompletions: Record<string, Record<string, boolean>>; // taskId -> dateStr -> done
 };
 
-export const TASK_PRESETS: Array<{ name: string; emoji: string }> = [
-  { name: 'Floss', emoji: '🧵' },
-  { name: 'Tooth cream', emoji: '🪥' },
-  { name: 'Mouthwash', emoji: '💧' },
-  { name: 'Tongue scrape', emoji: '👅' },
-  { name: 'Replace brush head', emoji: '🔄' },
-  { name: 'Drink water', emoji: '🥤' },
+export const TASK_PRESETS: Array<{ name: string; emoji: string; time: TaskTime }> = [
+  { name: 'Floss', emoji: '🧵', time: 'anytime' },
+  { name: 'Tooth cream', emoji: '🪥', time: 'night' },
+  { name: 'Mouthwash', emoji: '💧', time: 'anytime' },
+  { name: 'Tongue scrape', emoji: '👅', time: 'anytime' },
+  { name: 'Replace brush head', emoji: '🔄', time: 'anytime' },
+  { name: 'Drink water', emoji: '🥤', time: 'anytime' },
+];
+
+// The two most common extras get prominent on/off toggles in the kid editor.
+export const QUICK_TOGGLE_PRESETS: Array<{
+  key: string;
+  name: string;
+  emoji: string;
+  time: TaskTime;
+  title: string;
+  subtitle: string;
+}> = [
+  {
+    key: 'floss',
+    name: 'Floss',
+    emoji: '🧵',
+    time: 'anytime',
+    title: 'Track flossing',
+    subtitle: 'Adds a daily floss check to the Today list.',
+  },
+  {
+    key: 'tooth-cream',
+    name: 'Tooth cream',
+    emoji: '🪥',
+    time: 'night',
+    title: 'Track tooth cream (night)',
+    subtitle: 'Adds a bedtime tooth cream reminder after the evening brush.',
+  },
 ];
 
 export const TASK_EMOJIS = ['🧵', '🪥', '💧', '👅', '🔄', '🥤', '🍎', '🦷', '⏰', '💊', '🧴', '🌿'];
@@ -77,7 +107,7 @@ function seedKids(): Kid[] {
         [yesterday]: { morning: true, afternoon: true },
       },
       rewards: [],
-      tasks: [{ id: flossId, name: 'Floss', emoji: '🧵' }],
+      tasks: [{ id: flossId, name: 'Floss', emoji: '🧵', time: 'anytime' }],
       taskCompletions: {
         [flossId]: { [yesterday]: true },
       },
@@ -101,7 +131,10 @@ function migrate(kid: Partial<Kid> & { id: string; name: string; emoji: string; 
   return {
     ...kid,
     rewards: kid.rewards ?? [],
-    tasks: kid.tasks ?? [],
+    tasks: (kid.tasks ?? []).map((t) => ({
+      ...t,
+      time: (t as Partial<Task>).time ?? 'anytime',
+    })),
     taskCompletions: kid.taskCompletions ?? {},
   };
 }
@@ -213,17 +246,20 @@ export function useKids() {
     []
   );
 
-  const addTask = useCallback((kidId: string, name: string, emoji: string) => {
-    const taskId = nanoid();
-    setKids((prev) =>
-      prev.map((k) => {
-        if (k.id !== kidId) return k;
-        const newTask: Task = { id: taskId, name: name.trim() || 'Task', emoji };
-        return { ...k, tasks: [...k.tasks, newTask] };
-      })
-    );
-    return taskId;
-  }, []);
+  const addTask = useCallback(
+    (kidId: string, name: string, emoji: string, time: TaskTime = 'anytime') => {
+      const taskId = nanoid();
+      setKids((prev) =>
+        prev.map((k) => {
+          if (k.id !== kidId) return k;
+          const newTask: Task = { id: taskId, name: name.trim() || 'Task', emoji, time };
+          return { ...k, tasks: [...k.tasks, newTask] };
+        }),
+      );
+      return taskId;
+    },
+    [],
+  );
 
   const updateTask = useCallback(
     (kidId: string, taskId: string, updates: Partial<Pick<Task, 'name' | 'emoji'>>) => {
