@@ -5,12 +5,20 @@ import { format, startOfWeek, addDays } from 'date-fns';
 export type Session = 'morning' | 'afternoon';
 export type BrushRecord = Partial<Record<Session, boolean>>;
 
+export type Reward = {
+  weekStart: string; // 'yyyy-MM-dd' Monday
+  sticker: string; // emoji
+  name: string;
+  unlockedAt: string; // ISO
+};
+
 export type Kid = {
   id: string;
   name: string;
   emoji: string;
   color: string;
   brushings: Record<string, BrushRecord>;
+  rewards: Reward[];
 };
 
 const STORAGE_KEY = 'brush.kids.v1';
@@ -19,6 +27,21 @@ const SEED_KEY = 'brush.seeded.v1';
 
 export const KID_EMOJIS = ['🦄', '🦁', '🐼', '🐯', '🦊', '🐰', '🐻', '🐸', '🐵', '🐨', '🐶', '🐱'];
 export const KID_COLORS = ['#F472B6', '#FBBF24', '#60A5FA', '#34D399', '#A78BFA', '#FB923C', '#F87171', '#22D3EE'];
+
+export const REWARD_STICKERS: Array<{ emoji: string; name: string }> = [
+  { emoji: '🏆', name: 'Golden Trophy' },
+  { emoji: '🦷', name: 'Sparkly Tooth' },
+  { emoji: '⭐', name: 'Super Star' },
+  { emoji: '🎖️', name: 'Hero Medal' },
+  { emoji: '🌟', name: 'Cosmic Star' },
+  { emoji: '🏅', name: 'Champion Badge' },
+  { emoji: '👑', name: 'Royal Crown' },
+  { emoji: '🦸', name: 'Brush Hero' },
+  { emoji: '🌈', name: 'Rainbow Smile' },
+  { emoji: '🎁', name: 'Mystery Gift' },
+  { emoji: '🚀', name: 'Rocket Brusher' },
+  { emoji: '🐉', name: 'Dragon Slayer' },
+];
 
 function seedKids(): Kid[] {
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -33,6 +56,7 @@ function seedKids(): Kid[] {
         [today]: { morning: true },
         [yesterday]: { morning: true, afternoon: true },
       },
+      rewards: [],
     },
     {
       id: nanoid(),
@@ -42,14 +66,25 @@ function seedKids(): Kid[] {
       brushings: {
         [yesterday]: { morning: true },
       },
+      rewards: [],
     },
   ];
+}
+
+function migrate(kid: Partial<Kid> & { id: string; name: string; emoji: string; color: string; brushings: Record<string, BrushRecord> }): Kid {
+  return {
+    ...kid,
+    rewards: kid.rewards ?? [],
+  };
 }
 
 function loadKids(): Kid[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Kid[];
+      return parsed.map(migrate);
+    }
   } catch (e) {
     console.error('Failed to load kids', e);
   }
@@ -99,6 +134,7 @@ export function useKids() {
           emoji: emoji ?? KID_EMOJIS[prev.length % KID_EMOJIS.length],
           color: color ?? KID_COLORS[prev.length % KID_COLORS.length],
           brushings: {},
+          rewards: [],
         };
         return [...prev, newKid];
       });
@@ -147,6 +183,30 @@ export function useKids() {
     []
   );
 
+  const unlockWeekReward = useCallback(
+    (kidId: string, weekStartKey: string): Reward | null => {
+      let unlocked: Reward | null = null;
+      setKids((prev) =>
+        prev.map((k) => {
+          if (k.id !== kidId) return k;
+          if (k.rewards.some((r) => r.weekStart === weekStartKey)) return k;
+          const idx = k.rewards.length % REWARD_STICKERS.length;
+          const pick = REWARD_STICKERS[idx];
+          const reward: Reward = {
+            weekStart: weekStartKey,
+            sticker: pick.emoji,
+            name: pick.name,
+            unlockedAt: new Date().toISOString(),
+          };
+          unlocked = reward;
+          return { ...k, rewards: [...k.rewards, reward] };
+        })
+      );
+      return unlocked;
+    },
+    []
+  );
+
   const activeKid = kids.find((k) => k.id === activeId) ?? null;
 
   return {
@@ -159,6 +219,7 @@ export function useKids() {
     updateKid,
     setSession,
     toggleSession,
+    unlockWeekReward,
   };
 }
 
@@ -181,6 +242,18 @@ export function countWeekBrushings(kid: Kid, weekDays: Date[]): number {
     if (rec?.afternoon) count++;
   }
   return count;
+}
+
+export function getWeekStartKey(date: Date = new Date()): string {
+  return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+}
+
+export function getWeekReward(kid: Kid, weekStartKey: string): Reward | undefined {
+  return kid.rewards.find((r) => r.weekStart === weekStartKey);
+}
+
+export function isWeekComplete(kid: Kid, weekDays: Date[]): boolean {
+  return countWeekBrushings(kid, weekDays) >= 14;
 }
 
 export function getStreak(kid: Kid): number {

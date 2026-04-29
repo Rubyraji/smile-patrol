@@ -1,15 +1,46 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { Sparkles, Flame, Play } from 'lucide-react';
 import { format } from 'date-fns';
-import { useKids, getCurrentSession, getWeekDays, countWeekBrushings, getStreak } from '@/lib/store';
+import {
+  useKids,
+  getCurrentSession,
+  getWeekDays,
+  countWeekBrushings,
+  getStreak,
+  getWeekStartKey,
+  getWeekReward,
+  isWeekComplete,
+  type Reward,
+} from '@/lib/store';
 import { WeekGrid } from '@/components/week-grid';
 import { KidSwitcher } from '@/components/kid-switcher';
+import { RewardCard } from '@/components/reward-card';
+import { StickerCollection } from '@/components/sticker-collection';
+import { RewardCelebration } from '@/components/reward-celebration';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
-  const { kids, activeKid, activeId, setActiveId, toggleSession, addKid } = useKids();
+  const { kids, activeKid, activeId, setActiveId, toggleSession, addKid, unlockWeekReward } =
+    useKids();
   const weekDays = getWeekDays();
+  const weekStartKey = getWeekStartKey();
   const session = getCurrentSession();
+
+  const [celebration, setCelebration] = useState<Reward | null>(null);
+  const lastClaimedRef = useRef<Set<string>>(new Set());
+
+  // Auto-celebrate any newly unlocked week rewards
+  useEffect(() => {
+    if (!activeKid) return;
+    const r = getWeekReward(activeKid, weekStartKey);
+    if (r) {
+      const key = `${activeKid.id}:${r.weekStart}`;
+      if (!lastClaimedRef.current.has(key)) {
+        lastClaimedRef.current.add(key);
+      }
+    }
+  }, [activeKid, weekStartKey]);
 
   if (kids.length === 0) {
     return (
@@ -37,11 +68,22 @@ export default function Home() {
 
   const weekCount = countWeekBrushings(activeKid, weekDays);
   const weekTotal = 14;
-  const weekPct = (weekCount / weekTotal) * 100;
   const streak = getStreak(activeKid);
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayRec = activeKid.brushings[today] ?? {};
   const sessionDone = !!todayRec[session];
+
+  const currentWeekReward = getWeekReward(activeKid, weekStartKey);
+  const weekDone = isWeekComplete(activeKid, weekDays);
+
+  const handleClaim = () => {
+    if (!activeKid) return;
+    const newReward = unlockWeekReward(activeKid.id, weekStartKey);
+    if (newReward) {
+      setCelebration(newReward);
+      lastClaimedRef.current.add(`${activeKid.id}:${newReward.weekStart}`);
+    }
+  };
 
   return (
     <div className="min-h-screen pb-32">
@@ -91,7 +133,10 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
-              <div className="flex items-center gap-1 text-orange-500 font-bold text-lg" data-testid="streak-count">
+              <div
+                className="flex items-center gap-1 text-orange-500 font-bold text-lg"
+                data-testid="streak-count"
+              >
                 <Flame className="h-5 w-5 fill-orange-400" />
                 {streak}
               </div>
@@ -114,29 +159,52 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Week progress */}
+        {/* Weekly reward */}
+        <RewardCard
+          kid={activeKid}
+          weekCount={weekCount}
+          weekTotal={weekTotal}
+          reward={currentWeekReward}
+          onClaim={handleClaim}
+        />
+
+        {/* Week progress grid */}
         <section>
           <div className="flex items-center justify-between mb-3 px-1">
             <h3 className="font-bold flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-primary" />
               This week
             </h3>
-            <span className="text-sm font-semibold text-muted-foreground" data-testid="week-progress-text">
+            <span
+              className="text-sm font-semibold text-muted-foreground"
+              data-testid="week-progress-text"
+            >
               {weekCount} / {weekTotal} brushes
             </span>
-          </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden mb-4">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${weekPct}%`, backgroundColor: activeKid.color }}
-            />
           </div>
           <WeekGrid kid={activeKid} onToggle={(d, s) => toggleSession(activeKid.id, d, s)} />
           <p className="text-xs text-muted-foreground text-center mt-3">
             Tap any cell to mark a brush manually.
           </p>
         </section>
+
+        {/* Sticker collection */}
+        <StickerCollection rewards={activeKid.rewards} color={activeKid.color} />
       </main>
+
+      <RewardCelebration
+        reward={celebration}
+        kidName={activeKid.name}
+        kidColor={activeKid.color}
+        onClose={() => setCelebration(null)}
+      />
+
+      {/* Hint to keep parents informed when ready to claim but not yet claimed */}
+      {weekDone && !currentWeekReward && (
+        <div className="sr-only" aria-live="polite">
+          Reward ready to claim
+        </div>
+      )}
     </div>
   );
 }
