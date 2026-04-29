@@ -9,9 +9,29 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const DURATION_MS = 120_000; // 2 minutes
+const HALF_MS = 60_000; // 1 minute per zone
 
-const QUADRANT_LABELS = ['Top right', 'Top left', 'Bottom left', 'Bottom right'];
-const QUADRANT_EMOJIS = ['↗️', '↖️', '↙️', '↘️'];
+type Zone = {
+  key: 'top' | 'bottom';
+  label: string;
+  emoji: string;
+  hint: string;
+};
+
+const ZONES: Zone[] = [
+  {
+    key: 'top',
+    label: 'Top teeth',
+    emoji: '⬆️',
+    hint: 'Brush the teeth on top — front and back!',
+  },
+  {
+    key: 'bottom',
+    label: 'Bottom teeth',
+    emoji: '⬇️',
+    hint: 'Now brush the bottom teeth — front and back!',
+  },
+];
 
 export default function Brush() {
   const [, navigate] = useLocation();
@@ -89,9 +109,13 @@ export default function Brush() {
   const mins = Math.floor(remainingSec / 60);
   const secs = remainingSec % 60;
 
-  // Quadrant guidance every 30s
-  const elapsedSec = Math.floor(elapsed / 1000);
-  const quadrantIdx = Math.min(3, Math.floor(elapsedSec / 30));
+  // Top teeth for the first minute, bottom teeth for the second minute
+  const zoneIdx = Math.min(1, Math.floor(elapsed / HALF_MS));
+  const zone = ZONES[zoneIdx];
+  const zoneRemainingSec = Math.max(
+    0,
+    Math.ceil((HALF_MS * (zoneIdx + 1) - elapsed) / 1000),
+  );
 
   return (
     <div className="min-h-screen flex flex-col px-5 pt-4 pb-32">
@@ -147,6 +171,85 @@ export default function Brush() {
         </div>
       </div>
 
+      {/* Zone reminder popup — visible whenever the timer is active */}
+      <div className="max-w-md w-full mx-auto mb-4 min-h-[88px]">
+        <AnimatePresence mode="wait">
+          {completed ? null : running || elapsed > 0 ? (
+            <motion.div
+              key={zone.key}
+              initial={{ opacity: 0, y: -16, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.92 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+              className="rounded-2xl p-4 flex items-center gap-3 shadow-md border-2"
+              style={{
+                backgroundColor: `${activeKid.color}1f`,
+                borderColor: `${activeKid.color}66`,
+              }}
+              data-testid={`zone-banner-${zone.key}`}
+            >
+              <motion.div
+                animate={running ? { y: [0, -4, 0] } : {}}
+                transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
+                style={{ backgroundColor: activeKid.color }}
+              >
+                {zone.emoji}
+              </motion.div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className="text-[10px] font-bold uppercase tracking-wider"
+                  style={{ color: activeKid.color }}
+                >
+                  Now brushing
+                </p>
+                <p className="text-lg font-bold leading-tight">{zone.label}!</p>
+                <p className="text-xs text-muted-foreground leading-snug">
+                  {zone.hint}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p
+                  className="text-2xl font-bold tabular-nums leading-none"
+                  style={{ color: activeKid.color }}
+                  data-testid="zone-remaining"
+                >
+                  {zoneRemainingSec}s
+                </p>
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">
+                  left
+                </p>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="ready"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="rounded-2xl p-4 flex items-center gap-3 border-2 border-dashed"
+              style={{ borderColor: 'var(--border)' }}
+              data-testid="zone-banner-ready"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center text-2xl shrink-0">
+                ⬆️⬇️
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Two minutes
+                </p>
+                <p className="text-sm font-bold leading-tight">
+                  Top teeth first, then bottom!
+                </p>
+                <p className="text-xs text-muted-foreground leading-snug">
+                  I'll remind you when to switch.
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       {/* Dial */}
       <div className="flex-1 flex flex-col items-center justify-center">
         <BrushDial progress={progress} color={activeKid.color} pulse={running}>
@@ -177,11 +280,14 @@ export default function Brush() {
                   className="flex flex-col items-center"
                 >
                   <div className="text-6xl mb-1">🪥</div>
-                  <p className="text-5xl font-bold tabular-nums tracking-tight" data-testid="timer-display">
+                  <p
+                    className="text-5xl font-bold tabular-nums tracking-tight"
+                    data-testid="timer-display"
+                  >
                     {mins}:{secs.toString().padStart(2, '0')}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {running ? `${QUADRANT_EMOJIS[quadrantIdx]} ${QUADRANT_LABELS[quadrantIdx]}` : 'Tap start to begin'}
+                    {running ? 'Total time left' : 'Tap start to begin'}
                   </p>
                 </motion.div>
               )}
@@ -189,21 +295,29 @@ export default function Brush() {
           </div>
         </BrushDial>
 
-        {/* Quadrant pips */}
-        <div className="flex gap-2 mt-6">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className={cn(
-                'h-1.5 rounded-full transition-all duration-300',
-                elapsedSec >= (i + 1) * 30
-                  ? 'w-8 bg-primary'
-                  : elapsedSec >= i * 30 && running
-                    ? 'w-8 bg-primary/60'
-                    : 'w-6 bg-muted'
-              )}
-            />
-          ))}
+        {/* Zone pips — one per minute */}
+        <div className="flex gap-3 mt-6">
+          {ZONES.map((z, i) => {
+            const active = zoneIdx === i && (running || elapsed > 0);
+            const done = elapsed >= HALF_MS * (i + 1);
+            return (
+              <div
+                key={z.key}
+                className="flex items-center gap-1.5"
+                data-testid={`zone-pip-${z.key}`}
+              >
+                <div
+                  className={cn(
+                    'h-2 rounded-full transition-all duration-300',
+                    done ? 'w-12 bg-primary' : active ? 'w-12 bg-primary/60' : 'w-10 bg-muted',
+                  )}
+                />
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {z.label}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
