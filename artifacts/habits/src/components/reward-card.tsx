@@ -82,7 +82,7 @@ export function RewardCard({ kid, weekCount, weekTotal, reward, onClaim }: Props
             </p>
             <p className="text-lg font-bold leading-tight">Tap to open your gift</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              You brushed twice every day this week. Way to go!
+              You finished every daily goal this week. Way to go!
             </p>
           </div>
         </div>
@@ -108,10 +108,10 @@ export function RewardCard({ kid, weekCount, weekTotal, reward, onClaim }: Props
             Weekly reward
           </p>
           <p className="text-base font-bold leading-tight">
-            {remaining} more brush{remaining === 1 ? '' : 'es'} to unlock!
+            {remaining} more goal{remaining === 1 ? '' : 's'} to unlock!
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Brush morning &amp; evening every day to earn a sticker.
+            Finish all your daily tasks every day to earn a sticker.
           </p>
         </div>
       </div>
@@ -126,7 +126,7 @@ export function RewardCard({ kid, weekCount, weekTotal, reward, onClaim }: Props
       </div>
       <div className="flex items-center justify-between mt-1.5">
         <span className="text-[10px] font-semibold text-muted-foreground">
-          {weekCount} / {weekTotal} brushes
+          {weekCount} / {weekTotal} goals
         </span>
         <span className="text-[10px] font-semibold" style={{ color: kid.color }}>
           {Math.floor(pct)}%

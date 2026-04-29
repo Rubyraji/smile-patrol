@@ -6,14 +6,15 @@ import {
   useKids,
   getCurrentSession,
   getWeekDays,
-  countWeekBrushings,
   getStreak,
   getWeekStartKey,
   getWeekReward,
   isWeekComplete,
+  getWeekProgress,
   type Reward,
 } from '@/lib/store';
 import { WeekGrid } from '@/components/week-grid';
+import { TaskWeekGrid } from '@/components/task-week-grid';
 import { KidSwitcher } from '@/components/kid-switcher';
 import { RewardCard } from '@/components/reward-card';
 import { StickerCollection } from '@/components/sticker-collection';
@@ -21,8 +22,16 @@ import { RewardCelebration } from '@/components/reward-celebration';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
-  const { kids, activeKid, activeId, setActiveId, toggleSession, addKid, unlockWeekReward } =
-    useKids();
+  const {
+    kids,
+    activeKid,
+    activeId,
+    setActiveId,
+    toggleSession,
+    addKid,
+    unlockWeekReward,
+    toggleTaskCompletion,
+  } = useKids();
   const weekDays = getWeekDays();
   const weekStartKey = getWeekStartKey();
   const session = getCurrentSession();
@@ -66,8 +75,7 @@ export default function Home() {
 
   if (!activeKid) return null;
 
-  const weekCount = countWeekBrushings(activeKid, weekDays);
-  const weekTotal = 14;
+  const progress = getWeekProgress(activeKid, weekDays);
   const streak = getStreak(activeKid);
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayRec = activeKid.brushings[today] ?? {};
@@ -162,8 +170,8 @@ export default function Home() {
         {/* Weekly reward */}
         <RewardCard
           kid={activeKid}
-          weekCount={weekCount}
-          weekTotal={weekTotal}
+          weekCount={progress.totalDone}
+          weekTotal={progress.totalGoal}
           reward={currentWeekReward}
           onClaim={handleClaim}
         />
@@ -179,7 +187,7 @@ export default function Home() {
               className="text-sm font-semibold text-muted-foreground"
               data-testid="week-progress-text"
             >
-              {weekCount} / {weekTotal} brushes
+              {progress.brushDone} / {progress.brushTotal} brushes
             </span>
           </div>
           <WeekGrid kid={activeKid} onToggle={(d, s) => toggleSession(activeKid.id, d, s)} />
@@ -187,6 +195,19 @@ export default function Home() {
             Tap any cell to mark a brush manually.
           </p>
         </section>
+
+        {/* Daily extras (flossing, tooth cream, etc.) */}
+        {activeKid.tasks.length > 0 && (
+          <section>
+            <TaskWeekGrid
+              kid={activeKid}
+              onToggle={(taskId, dateStr) => toggleTaskCompletion(activeKid.id, taskId, dateStr)}
+            />
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              Manage daily extras in <span className="font-semibold">Kids → Edit</span>.
+            </p>
+          </section>
+        )}
 
         {/* Sticker collection */}
         <StickerCollection rewards={activeKid.rewards} color={activeKid.color} />

@@ -12,6 +12,12 @@ export type Reward = {
   unlockedAt: string; // ISO
 };
 
+export type Task = {
+  id: string;
+  name: string;
+  emoji: string;
+};
+
 export type Kid = {
   id: string;
   name: string;
@@ -19,7 +25,20 @@ export type Kid = {
   color: string;
   brushings: Record<string, BrushRecord>;
   rewards: Reward[];
+  tasks: Task[];
+  taskCompletions: Record<string, Record<string, boolean>>; // taskId -> dateStr -> done
 };
+
+export const TASK_PRESETS: Array<{ name: string; emoji: string }> = [
+  { name: 'Floss', emoji: '🧵' },
+  { name: 'Tooth cream', emoji: '🪥' },
+  { name: 'Mouthwash', emoji: '💧' },
+  { name: 'Tongue scrape', emoji: '👅' },
+  { name: 'Replace brush head', emoji: '🔄' },
+  { name: 'Drink water', emoji: '🥤' },
+];
+
+export const TASK_EMOJIS = ['🧵', '🪥', '💧', '👅', '🔄', '🥤', '🍎', '🦷', '⏰', '💊', '🧴', '🌿'];
 
 const STORAGE_KEY = 'brush.kids.v1';
 const ACTIVE_KEY = 'brush.activeKid.v1';
@@ -46,6 +65,7 @@ export const REWARD_STICKERS: Array<{ emoji: string; name: string }> = [
 function seedKids(): Kid[] {
   const today = format(new Date(), 'yyyy-MM-dd');
   const yesterday = format(addDays(new Date(), -1), 'yyyy-MM-dd');
+  const flossId = nanoid();
   return [
     {
       id: nanoid(),
@@ -57,6 +77,10 @@ function seedKids(): Kid[] {
         [yesterday]: { morning: true, afternoon: true },
       },
       rewards: [],
+      tasks: [{ id: flossId, name: 'Floss', emoji: '🧵' }],
+      taskCompletions: {
+        [flossId]: { [yesterday]: true },
+      },
     },
     {
       id: nanoid(),
@@ -67,6 +91,8 @@ function seedKids(): Kid[] {
         [yesterday]: { morning: true },
       },
       rewards: [],
+      tasks: [],
+      taskCompletions: {},
     },
   ];
 }
@@ -75,6 +101,8 @@ function migrate(kid: Partial<Kid> & { id: string; name: string; emoji: string; 
   return {
     ...kid,
     rewards: kid.rewards ?? [],
+    tasks: kid.tasks ?? [],
+    taskCompletions: kid.taskCompletions ?? {},
   };
 }
 
@@ -135,6 +163,8 @@ export function useKids() {
           color: color ?? KID_COLORS[prev.length % KID_COLORS.length],
           brushings: {},
           rewards: [],
+          tasks: [],
+          taskCompletions: {},
         };
         return [...prev, newKid];
       });
@@ -183,6 +213,64 @@ export function useKids() {
     []
   );
 
+  const addTask = useCallback((kidId: string, name: string, emoji: string) => {
+    const taskId = nanoid();
+    setKids((prev) =>
+      prev.map((k) => {
+        if (k.id !== kidId) return k;
+        const newTask: Task = { id: taskId, name: name.trim() || 'Task', emoji };
+        return { ...k, tasks: [...k.tasks, newTask] };
+      })
+    );
+    return taskId;
+  }, []);
+
+  const updateTask = useCallback(
+    (kidId: string, taskId: string, updates: Partial<Pick<Task, 'name' | 'emoji'>>) => {
+      setKids((prev) =>
+        prev.map((k) => {
+          if (k.id !== kidId) return k;
+          return {
+            ...k,
+            tasks: k.tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t)),
+          };
+        })
+      );
+    },
+    []
+  );
+
+  const removeTask = useCallback((kidId: string, taskId: string) => {
+    setKids((prev) =>
+      prev.map((k) => {
+        if (k.id !== kidId) return k;
+        const { [taskId]: _removed, ...restCompletions } = k.taskCompletions;
+        return {
+          ...k,
+          tasks: k.tasks.filter((t) => t.id !== taskId),
+          taskCompletions: restCompletions,
+        };
+      })
+    );
+  }, []);
+
+  const toggleTaskCompletion = useCallback(
+    (kidId: string, taskId: string, dateStr: string) => {
+      setKids((prev) =>
+        prev.map((k) => {
+          if (k.id !== kidId) return k;
+          const taskMap = k.taskCompletions[taskId] ?? {};
+          const next = { ...taskMap, [dateStr]: !taskMap[dateStr] };
+          return {
+            ...k,
+            taskCompletions: { ...k.taskCompletions, [taskId]: next },
+          };
+        })
+      );
+    },
+    []
+  );
+
   const unlockWeekReward = useCallback(
     (kidId: string, weekStartKey: string): Reward | null => {
       let unlocked: Reward | null = null;
@@ -220,6 +308,10 @@ export function useKids() {
     setSession,
     toggleSession,
     unlockWeekReward,
+    addTask,
+    updateTask,
+    removeTask,
+    toggleTaskCompletion,
   };
 }
 
@@ -252,8 +344,51 @@ export function getWeekReward(kid: Kid, weekStartKey: string): Reward | undefine
   return kid.rewards.find((r) => r.weekStart === weekStartKey);
 }
 
+export function isTaskDone(kid: Kid, taskId: string, dateStr: string): boolean {
+  return !!kid.taskCompletions[taskId]?.[dateStr];
+}
+
+export function countWeekTaskCompletions(kid: Kid, taskId: string, weekDays: Date[]): number {
+  let count = 0;
+  for (const d of weekDays) {
+    if (isTaskDone(kid, taskId, format(d, 'yyyy-MM-dd'))) count++;
+  }
+  return count;
+}
+
+export type WeekProgress = {
+  brushDone: number;
+  brushTotal: number;
+  tasksDone: number;
+  tasksTotal: number;
+  totalDone: number;
+  totalGoal: number;
+  complete: boolean;
+};
+
+export function getWeekProgress(kid: Kid, weekDays: Date[]): WeekProgress {
+  const brushDone = countWeekBrushings(kid, weekDays);
+  const brushTotal = 14;
+  let tasksDone = 0;
+  for (const t of kid.tasks) {
+    tasksDone += countWeekTaskCompletions(kid, t.id, weekDays);
+  }
+  const tasksTotal = kid.tasks.length * 7;
+  const totalDone = brushDone + tasksDone;
+  const totalGoal = brushTotal + tasksTotal;
+  return {
+    brushDone,
+    brushTotal,
+    tasksDone,
+    tasksTotal,
+    totalDone,
+    totalGoal,
+    complete: totalDone >= totalGoal,
+  };
+}
+
 export function isWeekComplete(kid: Kid, weekDays: Date[]): boolean {
-  return countWeekBrushings(kid, weekDays) >= 14;
+  return getWeekProgress(kid, weekDays).complete;
 }
 
 export function getStreak(kid: Kid): number {

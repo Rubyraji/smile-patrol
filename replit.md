@@ -6,7 +6,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 ## Apps
 
-- **`artifacts/habits` — Brush Buddies**: A kid-friendly tooth brushing tracker. Tracks morning/evening brushing per kid in a weekly grid, with a 2-minute interactive timer dial. Includes a weekly reward system: completing all 14 brushes unlocks a sticker added to the kid's collection (with a confetti celebration). Multi-kid support with avatars/colors. State stored in localStorage. Routes: `/` (home + week grid + rewards), `/brush` (timer), `/kids` (manage kids).
+- **`artifacts/habits` — Brush Buddies**: A kid-friendly tooth brushing tracker. Tracks morning/evening brushing per kid in a weekly grid, with a 2-minute interactive timer dial. Includes configurable per-kid daily extras (flossing, tooth cream, mouthwash, tongue scrape, or custom) with their own weekly grid. Weekly reward system: completing every daily goal (2 brushes + each task) for all 7 days unlocks a sticker added to the kid's collection (with a confetti celebration). Multi-kid support with avatars/colors. State stored in localStorage. Routes: `/` (home + brushing grid + extras grid + rewards), `/brush` (timer), `/kids` (manage kids and tasks).
 - **`artifacts/api-server`**: Express API server (currently unused by Brush Buddies).
 - **`artifacts/mockup-sandbox`**: Canvas mockup sandbox.
 

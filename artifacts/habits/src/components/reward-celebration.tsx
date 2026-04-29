@@ -105,7 +105,7 @@ export function RewardCelebration({ reward, kidName, kidColor, onClose }: Props)
               {reward.name}
             </h3>
             <p className="text-sm text-muted-foreground mb-6 relative">
-              You brushed twice every day this week. That's 14 brushes — incredible work!
+              You finished every daily goal this week. Incredible work!
             </p>
 
             <button

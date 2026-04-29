@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { ArrowLeft, Trash2, Plus, X } from 'lucide-react';
-import { useKids, KID_EMOJIS, KID_COLORS, type Kid } from '@/lib/store';
+import { ArrowLeft, Trash2, Plus, X, Check } from 'lucide-react';
+import {
+  useKids,
+  KID_EMOJIS,
+  KID_COLORS,
+  TASK_PRESETS,
+  TASK_EMOJIS,
+  type Kid,
+  type Task,
+} from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,10 +25,12 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function Kids() {
-  const { kids, addKid, removeKid, updateKid } = useKids();
-  const [editing, setEditing] = useState<Kid | null>(null);
+  const { kids, addKid, removeKid, updateKid, addTask, updateTask, removeTask } = useKids();
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Kid | null>(null);
+
+  const editing = editingId ? kids.find((k) => k.id === editingId) ?? null : null;
 
   return (
     <div className="min-h-screen pb-32 px-5 pt-4">
@@ -39,7 +49,7 @@ export default function Kids() {
         {kids.map((k) => (
           <button
             key={k.id}
-            onClick={() => setEditing(k)}
+            onClick={() => setEditingId(k.id)}
             data-testid={`kid-row-${k.id}`}
             className="w-full flex items-center gap-3 p-3 rounded-2xl bg-card border hover:bg-muted/40 transition text-left"
           >
@@ -53,6 +63,7 @@ export default function Kids() {
               <p className="font-bold truncate">{k.name}</p>
               <p className="text-xs text-muted-foreground">
                 {Object.keys(k.brushings).length} day{Object.keys(k.brushings).length === 1 ? '' : 's'} tracked
+                {k.tasks.length > 0 && ` · ${k.tasks.length} extra${k.tasks.length === 1 ? '' : 's'}`}
               </p>
             </div>
             <span className="text-xs text-muted-foreground">Edit</span>
@@ -73,23 +84,25 @@ export default function Kids() {
         <KidEditor
           kid={editing}
           onClose={() => {
-            setEditing(null);
+            setEditingId(null);
             setAdding(false);
           }}
-          onSave={(name, emoji, color) => {
+          onSaveProfile={(name, emoji, color) => {
             if (editing) {
               updateKid(editing.id, { name, emoji, color });
             } else {
               addKid(name, emoji, color);
+              setAdding(false);
             }
-            setEditing(null);
-            setAdding(false);
           }}
+          onAddTask={(name, emoji) => editing && addTask(editing.id, name, emoji)}
+          onUpdateTask={(taskId, updates) => editing && updateTask(editing.id, taskId, updates)}
+          onRemoveTask={(taskId) => editing && removeTask(editing.id, taskId)}
           onDelete={
             editing
               ? () => {
                   setPendingDelete(editing);
-                  setEditing(null);
+                  setEditingId(null);
                 }
               : undefined
           }
@@ -126,17 +139,44 @@ export default function Kids() {
 function KidEditor({
   kid,
   onClose,
-  onSave,
+  onSaveProfile,
+  onAddTask,
+  onUpdateTask,
+  onRemoveTask,
   onDelete,
 }: {
   kid: Kid | null;
   onClose: () => void;
-  onSave: (name: string, emoji: string, color: string) => void;
+  onSaveProfile: (name: string, emoji: string, color: string) => void;
+  onAddTask: (name: string, emoji: string) => void;
+  onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'name' | 'emoji'>>) => void;
+  onRemoveTask: (taskId: string) => void;
   onDelete?: () => void;
 }) {
   const [name, setName] = useState(kid?.name ?? '');
   const [emoji, setEmoji] = useState(kid?.emoji ?? KID_EMOJIS[0]);
   const [color, setColor] = useState(kid?.color ?? KID_COLORS[0]);
+  const [taskDraftName, setTaskDraftName] = useState('');
+  const [taskDraftEmoji, setTaskDraftEmoji] = useState(TASK_EMOJIS[0]);
+  const [showTaskComposer, setShowTaskComposer] = useState(false);
+
+  const tasks = kid?.tasks ?? [];
+
+  const presetExists = (name: string) =>
+    tasks.some((t) => t.name.toLowerCase() === name.toLowerCase());
+
+  const handleSaveProfile = () => {
+    onSaveProfile(name.trim() || 'Kiddo', emoji, color);
+    if (!kid) onClose(); // for new kid we close after save
+  };
+
+  const handleAddTaskFromComposer = () => {
+    if (!taskDraftName.trim()) return;
+    onAddTask(taskDraftName.trim(), taskDraftEmoji);
+    setTaskDraftName('');
+    setTaskDraftEmoji(TASK_EMOJIS[0]);
+    setShowTaskComposer(false);
+  };
 
   return (
     <div
@@ -144,10 +184,10 @@ function KidEditor({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-card rounded-t-3xl sm:rounded-3xl border shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-card rounded-t-3xl sm:rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-5 border-b">
+        <div className="flex items-center justify-between p-5 border-b shrink-0">
           <h2 className="text-lg font-bold">{kid ? 'Edit kid' : 'New kid'}</h2>
           <button
             onClick={onClose}
@@ -158,7 +198,8 @@ function KidEditor({
           </button>
         </div>
 
-        <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+        <div className="p-5 space-y-6 overflow-y-auto flex-1">
+          {/* Avatar preview */}
           <div className="flex justify-center">
             <div
               className="w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-md"
@@ -168,6 +209,7 @@ function KidEditor({
             </div>
           </div>
 
+          {/* Name */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 block">
               Name
@@ -178,10 +220,11 @@ function KidEditor({
               placeholder="Kid's name"
               data-testid="kid-name-input"
               className="rounded-xl h-11"
-              autoFocus
+              autoFocus={!kid}
             />
           </div>
 
+          {/* Avatar */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
               Avatar
@@ -205,6 +248,7 @@ function KidEditor({
             </div>
           </div>
 
+          {/* Color */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
               Color
@@ -225,9 +269,139 @@ function KidEditor({
               ))}
             </div>
           </div>
+
+          {/* Daily extras section - only for existing kids */}
+          {kid && (
+            <div className="pt-2 border-t -mx-5 px-5">
+              <div className="flex items-center justify-between mb-1 mt-4">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Daily extras
+                </label>
+                <span className="text-[10px] text-muted-foreground">
+                  Counts toward weekly reward
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Add habits like flossing or tooth cream that {kid.name} should do once a day.
+              </p>
+
+              {/* Existing tasks */}
+              {tasks.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {tasks.map((t) => (
+                    <TaskRow
+                      key={t.id}
+                      task={t}
+                      onRename={(name) => onUpdateTask(t.id, { name })}
+                      onChangeEmoji={(emoji) => onUpdateTask(t.id, { emoji })}
+                      onRemove={() => onRemoveTask(t.id)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Quick presets */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Quick add
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {TASK_PRESETS.map((preset) => {
+                    const exists = presetExists(preset.name);
+                    return (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        disabled={exists}
+                        onClick={() => onAddTask(preset.name, preset.emoji)}
+                        data-testid={`preset-${preset.name.toLowerCase().replace(/\s+/g, '-')}`}
+                        className={cn(
+                          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 text-sm font-semibold transition',
+                          exists
+                            ? 'opacity-40 cursor-not-allowed bg-muted border-border text-muted-foreground'
+                            : 'bg-card border-border hover:border-primary hover:text-primary active:scale-95'
+                        )}
+                      >
+                        <span>{preset.emoji}</span>
+                        <span>{preset.name}</span>
+                        {exists ? (
+                          <Check className="h-3 w-3 text-muted-foreground" />
+                        ) : (
+                          <Plus className="h-3 w-3" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom task composer */}
+                {showTaskComposer ? (
+                  <div className="rounded-2xl border bg-muted/40 p-3 space-y-3 mt-2">
+                    <Input
+                      value={taskDraftName}
+                      onChange={(e) => setTaskDraftName(e.target.value)}
+                      placeholder="Custom task name"
+                      data-testid="custom-task-name"
+                      className="rounded-lg h-10"
+                      autoFocus
+                    />
+                    <div className="flex gap-1.5 flex-wrap">
+                      {TASK_EMOJIS.map((e) => (
+                        <button
+                          key={e}
+                          type="button"
+                          onClick={() => setTaskDraftEmoji(e)}
+                          className={cn(
+                            'w-9 h-9 rounded-lg text-lg flex items-center justify-center transition',
+                            taskDraftEmoji === e
+                              ? 'bg-primary/15 ring-2 ring-primary'
+                              : 'bg-card hover:bg-muted'
+                          )}
+                        >
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setShowTaskComposer(false);
+                          setTaskDraftName('');
+                        }}
+                        className="flex-1 rounded-lg h-10"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleAddTaskFromComposer}
+                        disabled={!taskDraftName.trim()}
+                        data-testid="add-custom-task"
+                        className="flex-1 rounded-lg h-10"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowTaskComposer(true)}
+                    data-testid="show-custom-task"
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 mt-2 rounded-xl border-2 border-dashed border-border text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/40 transition"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Custom task
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="p-5 border-t flex items-center gap-3 bg-card">
+        <div className="p-5 border-t flex items-center gap-3 bg-card shrink-0">
           {onDelete && (
             <Button
               type="button"
@@ -240,14 +414,118 @@ function KidEditor({
             </Button>
           )}
           <Button
-            onClick={() => onSave(name.trim() || 'Kiddo', emoji, color)}
+            onClick={() => {
+              if (kid) {
+                handleSaveProfile();
+                onClose();
+              } else {
+                handleSaveProfile();
+              }
+            }}
             data-testid="save-kid-button"
             className="flex-1 rounded-xl h-11 font-bold"
           >
-            Save
+            {kid ? 'Done' : 'Add kid'}
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function TaskRow({
+  task,
+  onRename,
+  onChangeEmoji,
+  onRemove,
+}: {
+  task: Task;
+  onRename: (name: string) => void;
+  onChangeEmoji: (emoji: string) => void;
+  onRemove: () => void;
+}) {
+  const [editingName, setEditingName] = useState(false);
+  const [draft, setDraft] = useState(task.name);
+  const [pickingEmoji, setPickingEmoji] = useState(false);
+
+  const commit = () => {
+    if (draft.trim() && draft !== task.name) onRename(draft.trim());
+    setEditingName(false);
+  };
+
+  return (
+    <div
+      className="flex items-center gap-2 p-2 rounded-xl bg-card border"
+      data-testid={`task-row-${task.id}`}
+    >
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setPickingEmoji((v) => !v)}
+          className="w-10 h-10 rounded-lg bg-muted text-2xl flex items-center justify-center hover:bg-muted/70 transition"
+          aria-label="Change emoji"
+        >
+          {task.emoji}
+        </button>
+        {pickingEmoji && (
+          <div className="absolute z-10 left-0 top-12 bg-card border rounded-xl shadow-lg p-2 grid grid-cols-6 gap-1 w-56">
+            {TASK_EMOJIS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => {
+                  onChangeEmoji(e);
+                  setPickingEmoji(false);
+                }}
+                className={cn(
+                  'aspect-square rounded-md text-lg flex items-center justify-center hover:bg-muted',
+                  task.emoji === e && 'bg-primary/15 ring-2 ring-primary'
+                )}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {editingName ? (
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit();
+            if (e.key === 'Escape') {
+              setDraft(task.name);
+              setEditingName(false);
+            }
+          }}
+          autoFocus
+          className="h-9 rounded-lg flex-1"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setDraft(task.name);
+            setEditingName(true);
+          }}
+          className="flex-1 text-left font-semibold text-sm truncate"
+        >
+          {task.name}
+        </button>
+      )}
+
+      <button
+        type="button"
+        onClick={onRemove}
+        data-testid={`remove-task-${task.id}`}
+        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+        aria-label="Remove task"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
     </div>
   );
 }
