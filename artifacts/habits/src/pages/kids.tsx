@@ -5,6 +5,7 @@ import {
   useKids,
   KID_EMOJIS,
   KID_COLORS,
+  CHARACTER_CATEGORIES,
   TASK_PRESETS,
   TASK_EMOJIS,
   QUICK_TOGGLE_PRESETS,
@@ -156,12 +157,21 @@ function KidEditor({
   onRemoveTask: (taskId: string) => void;
   onDelete?: () => void;
 }) {
+  const initialEmoji = kid?.emoji ?? KID_EMOJIS[0];
+  const initialCategory =
+    CHARACTER_CATEGORIES.find((c) => c.characters.includes(initialEmoji))?.key ??
+    CHARACTER_CATEGORIES[0].key;
+
   const [name, setName] = useState(kid?.name ?? '');
-  const [emoji, setEmoji] = useState(kid?.emoji ?? KID_EMOJIS[0]);
+  const [emoji, setEmoji] = useState(initialEmoji);
   const [color, setColor] = useState(kid?.color ?? KID_COLORS[0]);
+  const [characterCategory, setCharacterCategory] = useState<string>(initialCategory);
   const [taskDraftName, setTaskDraftName] = useState('');
   const [taskDraftEmoji, setTaskDraftEmoji] = useState(TASK_EMOJIS[0]);
   const [showTaskComposer, setShowTaskComposer] = useState(false);
+
+  const activeCategory =
+    CHARACTER_CATEGORIES.find((c) => c.key === characterCategory) ?? CHARACTER_CATEGORIES[0];
 
   const tasks = kid?.tasks ?? [];
 
@@ -233,10 +243,36 @@ function KidEditor({
           {/* Avatar */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
-              Avatar
+              Character
             </label>
-            <div className="grid grid-cols-6 gap-2">
-              {KID_EMOJIS.map((e) => (
+
+            {/* Category tabs */}
+            <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
+              {CHARACTER_CATEGORIES.map((cat) => {
+                const isActive = cat.key === characterCategory;
+                return (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => setCharacterCategory(cat.key)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0',
+                      isActive
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                    )}
+                    data-testid={`character-category-${cat.key}`}
+                  >
+                    <span className="text-sm leading-none">{cat.icon}</span>
+                    <span>{cat.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Character grid */}
+            <div className="grid grid-cols-6 gap-2 max-h-56 overflow-y-auto p-1 -m-1">
+              {activeCategory.characters.map((e) => (
                 <button
                   key={e}
                   onClick={() => setEmoji(e)}
@@ -247,6 +283,7 @@ function KidEditor({
                       : 'bg-muted hover:bg-muted/70'
                   )}
                   type="button"
+                  data-testid={`character-${e}`}
                 >
                   {e}
                 </button>

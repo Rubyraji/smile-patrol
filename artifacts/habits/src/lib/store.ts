@@ -74,7 +74,73 @@ const STORAGE_KEY = 'brush.kids.v1';
 const ACTIVE_KEY = 'brush.activeKid.v1';
 const SEED_KEY = 'brush.seeded.v1';
 
-export const KID_EMOJIS = ['🦄', '🦁', '🐼', '🐯', '🦊', '🐰', '🐻', '🐸', '🐵', '🐨', '🐶', '🐱'];
+export type CharacterCategory = {
+  key: string;
+  label: string;
+  icon: string;
+  characters: string[];
+};
+
+export const CHARACTER_CATEGORIES: CharacterCategory[] = [
+  {
+    key: 'animals',
+    label: 'Animals',
+    icon: '🐾',
+    characters: [
+      '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯',
+      '🦁', '🐮', '🐷', '🐸', '🐵', '🦒', '🦓', '🐴', '🦌', '🐘',
+      '🦔', '🦝', '🐺', '🦘', '🐿️', '🦥',
+    ],
+  },
+  {
+    key: 'birds',
+    label: 'Birds',
+    icon: '🦜',
+    characters: ['🐔', '🐧', '🐦', '🐤', '🦆', '🦅', '🦉', '🦩', '🦚', '🦜', '🐓', '🦢'],
+  },
+  {
+    key: 'sea',
+    label: 'Sea',
+    icon: '🐠',
+    characters: [
+      '🐙', '🐠', '🐟', '🐡', '🦈', '🐬', '🐳', '🐋',
+      '🦭', '🦦', '🐊', '🦞', '🦀', '🦐', '🦑', '🐢',
+    ],
+  },
+  {
+    key: 'fantasy',
+    label: 'Fantasy',
+    icon: '🦄',
+    characters: [
+      '🦄', '🐉', '🦖', '🦕', '🧚', '🧜', '🧙', '🧝', '🧛',
+      '🧞', '👻', '👽', '🤖', '👾', '🧌', '🧟',
+    ],
+  },
+  {
+    key: 'heroes',
+    label: 'Heroes',
+    icon: '🦸',
+    characters: ['🦸', '🥷', '🤴', '👸', '🧑‍🚀', '🧑‍🚒', '🧑‍🍳', '🧑‍🎤', '🧑‍🎨', '🧑‍🌾', '🧑‍⚕️', '🕵️'],
+  },
+  {
+    key: 'bugs',
+    label: 'Bugs',
+    icon: '🐝',
+    characters: ['🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🪲', '🪳', '🦗', '🕷️'],
+  },
+  {
+    key: 'nature',
+    label: 'Nature',
+    icon: '🌟',
+    characters: [
+      '🌟', '⭐', '🌈', '☀️', '🌙', '⚡', '🔥', '❄️', '🌸',
+      '🌺', '🌻', '🌷', '🌼', '🍀', '🌵', '🍄',
+    ],
+  },
+];
+
+// Flat list kept for back-compat (used as default avatar rotation when adding kids).
+export const KID_EMOJIS: string[] = CHARACTER_CATEGORIES.flatMap((c) => c.characters);
 export const KID_COLORS = ['#F472B6', '#FBBF24', '#60A5FA', '#34D399', '#A78BFA', '#FB923C', '#F87171', '#22D3EE'];
 
 export const REWARD_STICKERS: Array<{ emoji: string; name: string }> = [
