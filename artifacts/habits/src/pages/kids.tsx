@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
-import { ArrowLeft, Trash2, Plus, X, Check } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, X, Check, RotateCcw } from 'lucide-react';
 import {
   useKids,
   KID_EMOJIS,
@@ -13,6 +13,14 @@ import {
   type Task,
   type TaskTime,
 } from '@/lib/store';
+import {
+  getTeethForAge,
+  DEFAULT_AGE,
+  MIN_AGE,
+  MAX_AGE,
+  type ToothId,
+} from '@/lib/teeth';
+import { DentalArches } from '@/components/dental-arches';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -29,7 +37,17 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function Kids() {
-  const { kids, addKid, removeKid, updateKid, addTask, updateTask, removeTask } = useKids();
+  const {
+    kids,
+    addKid,
+    removeKid,
+    updateKid,
+    toggleMissingTooth,
+    resetMissingTeeth,
+    addTask,
+    updateTask,
+    removeTask,
+  } = useKids();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Kid | null>(null);
@@ -91,17 +109,19 @@ export default function Kids() {
             setEditingId(null);
             setAdding(false);
           }}
-          onSaveProfile={(name, emoji, color) => {
+          onSaveProfile={(name, emoji, color, age) => {
             if (editing) {
-              updateKid(editing.id, { name, emoji, color });
+              updateKid(editing.id, { name, emoji, color, age });
             } else {
-              addKid(name, emoji, color);
+              addKid(name, emoji, color, age);
               setAdding(false);
             }
           }}
           onAddTask={(name, emoji, time) => editing && addTask(editing.id, name, emoji, time)}
           onUpdateTask={(taskId, updates) => editing && updateTask(editing.id, taskId, updates)}
           onRemoveTask={(taskId) => editing && removeTask(editing.id, taskId)}
+          onToggleTooth={(toothId) => editing && toggleMissingTooth(editing.id, toothId)}
+          onResetTeeth={() => editing && resetMissingTeeth(editing.id)}
           onDelete={
             editing
               ? () => {
@@ -147,14 +167,18 @@ function KidEditor({
   onAddTask,
   onUpdateTask,
   onRemoveTask,
+  onToggleTooth,
+  onResetTeeth,
   onDelete,
 }: {
   kid: Kid | null;
   onClose: () => void;
-  onSaveProfile: (name: string, emoji: string, color: string) => void;
+  onSaveProfile: (name: string, emoji: string, color: string, age: number) => void;
   onAddTask: (name: string, emoji: string, time?: TaskTime) => void;
   onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'name' | 'emoji'>>) => void;
   onRemoveTask: (taskId: string) => void;
+  onToggleTooth: (toothId: ToothId) => void;
+  onResetTeeth: () => void;
   onDelete?: () => void;
 }) {
   const initialEmoji = kid?.emoji ?? KID_EMOJIS[0];
@@ -165,6 +189,7 @@ function KidEditor({
   const [name, setName] = useState(kid?.name ?? '');
   const [emoji, setEmoji] = useState(initialEmoji);
   const [color, setColor] = useState(kid?.color ?? KID_COLORS[0]);
+  const [age, setAge] = useState<number>(kid?.age ?? DEFAULT_AGE);
   const [characterCategory, setCharacterCategory] = useState<string>(initialCategory);
   const [taskDraftName, setTaskDraftName] = useState('');
   const [taskDraftEmoji, setTaskDraftEmoji] = useState(TASK_EMOJIS[0]);
@@ -175,11 +200,20 @@ function KidEditor({
 
   const tasks = kid?.tasks ?? [];
 
+  // Live preview teeth — uses the kid's saved overrides combined with the
+  // age the user is currently editing. For new kids there are no overrides yet.
+  const previewTeeth = useMemo(
+    () => getTeethForAge(age, kid?.missingTeeth ?? []),
+    [age, kid?.missingTeeth],
+  );
+  const missingOverrideCount = (kid?.missingTeeth ?? []).length;
+
   const presetExists = (name: string) =>
     tasks.some((t) => t.name.toLowerCase() === name.toLowerCase());
 
   const handleSaveProfile = () => {
-    onSaveProfile(name.trim() || 'Kiddo', emoji, color);
+    const safeAge = Math.min(MAX_AGE, Math.max(MIN_AGE, Math.round(age)));
+    onSaveProfile(name.trim() || 'Kiddo', emoji, color, safeAge);
     if (!kid) onClose(); // for new kid we close after save
   };
 
@@ -311,6 +345,93 @@ function KidEditor({
                 />
               ))}
             </div>
+          </div>
+
+          {/* Age */}
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
+              Age
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setAge((a) => Math.max(MIN_AGE, a - 1))}
+                disabled={age <= MIN_AGE}
+                className="w-10 h-10 rounded-full bg-muted hover:bg-muted/70 active:scale-95 transition flex items-center justify-center text-xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="Decrease age"
+                data-testid="age-decrement"
+              >
+                −
+              </button>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={MIN_AGE}
+                max={MAX_AGE}
+                value={age}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (Number.isNaN(v)) return;
+                  setAge(Math.min(MAX_AGE, Math.max(MIN_AGE, v)));
+                }}
+                className="rounded-xl h-11 text-center text-lg font-bold w-20 tabular-nums"
+                data-testid="age-input"
+              />
+              <button
+                type="button"
+                onClick={() => setAge((a) => Math.min(MAX_AGE, a + 1))}
+                disabled={age >= MAX_AGE}
+                className="w-10 h-10 rounded-full bg-muted hover:bg-muted/70 active:scale-95 transition flex items-center justify-center text-xl font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="Increase age"
+                data-testid="age-increment"
+              >
+                +
+              </button>
+              <span className="text-sm text-muted-foreground ml-1">
+                year{age === 1 ? '' : 's'} old
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 leading-snug">
+              We'll show the teeth that usually fit this age — baby teeth, big teeth, or a mix.
+            </p>
+          </div>
+
+          {/* Teeth — interactive only when editing an existing kid */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {kid ? "Tap teeth that aren't there" : 'Teeth preview'}
+              </label>
+              {kid && missingOverrideCount > 0 && (
+                <button
+                  type="button"
+                  onClick={onResetTeeth}
+                  className="text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  data-testid="reset-teeth-button"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Reset
+                </button>
+              )}
+            </div>
+            <div
+              className="rounded-2xl border-2 border-dashed p-2 flex items-center justify-center"
+              style={{ borderColor: 'var(--border)' }}
+            >
+              <DentalArches
+                teeth={previewTeeth}
+                size={240}
+                highlight="none"
+                highlightColor={color}
+                interactive={!!kid}
+                onToothClick={(id) => kid && onToggleTooth(id)}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 leading-snug">
+              {kid
+                ? 'Tap a tooth to mark it as missing (loose, just lost, or not in yet). Tap again to bring it back.'
+                : 'Save the kid first, then tap any tooth to mark it as missing.'}
+            </p>
           </div>
 
           {/* Daily extras section - only for existing kids */}

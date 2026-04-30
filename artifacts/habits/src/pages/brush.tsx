@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { ArrowLeft, Play, Pause, RotateCcw, Sun, Moon, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useKids, getCurrentSession, type Session } from '@/lib/store';
+import { getTeethForAge, DEFAULT_AGE } from '@/lib/teeth';
 import { BrushDial } from '@/components/brush-dial';
+import { DentalArches } from '@/components/dental-arches';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -108,6 +110,11 @@ export default function Brush() {
   const remainingSec = Math.ceil(remainingMs / 1000);
   const mins = Math.floor(remainingSec / 60);
   const secs = remainingSec % 60;
+
+  const teeth = useMemo(
+    () => getTeethForAge(activeKid.age ?? DEFAULT_AGE, activeKid.missingTeeth ?? []),
+    [activeKid.age, activeKid.missingTeeth],
+  );
 
   // Top teeth for the first minute, bottom teeth for the second minute
   const zoneIdx = Math.min(1, Math.floor(elapsed / HALF_MS));
@@ -253,7 +260,7 @@ export default function Brush() {
       {/* Dial */}
       <div className="flex-1 flex flex-col items-center justify-center">
         <BrushDial progress={progress} color={activeKid.color} pulse={running}>
-          <div className="text-center select-none">
+          <div className="text-center select-none w-full px-2">
             <AnimatePresence mode="wait">
               {completed ? (
                 <motion.div
@@ -263,14 +270,20 @@ export default function Brush() {
                   exit={{ scale: 0.6, opacity: 0 }}
                   className="flex flex-col items-center"
                 >
+                  <DentalArches
+                    teeth={teeth}
+                    highlight="both"
+                    highlightColor={activeKid.color}
+                    size={210}
+                  />
                   <div
-                    className="w-20 h-20 rounded-full flex items-center justify-center mb-2"
+                    className="-mt-6 w-14 h-14 rounded-full flex items-center justify-center shadow-md"
                     style={{ backgroundColor: activeKid.color }}
                   >
-                    <Check className="h-12 w-12 text-white" strokeWidth={3} />
+                    <Check className="h-8 w-8 text-white" strokeWidth={3} />
                   </div>
-                  <p className="text-2xl font-bold">All done!</p>
-                  <p className="text-sm text-muted-foreground">Sparkly clean ✨</p>
+                  <p className="text-lg font-bold mt-2">All done!</p>
+                  <p className="text-xs text-muted-foreground">Sparkly clean ✨</p>
                 </motion.div>
               ) : (
                 <motion.div
@@ -279,14 +292,25 @@ export default function Brush() {
                   animate={{ opacity: 1 }}
                   className="flex flex-col items-center"
                 >
-                  <div className="text-6xl mb-1">🪥</div>
+                  <DentalArches
+                    teeth={teeth}
+                    highlight={
+                      running || elapsed > 0
+                        ? zone.key === 'top'
+                          ? 'upper'
+                          : 'lower'
+                        : 'none'
+                    }
+                    highlightColor={activeKid.color}
+                    size={220}
+                  />
                   <p
-                    className="text-5xl font-bold tabular-nums tracking-tight"
+                    className="text-3xl font-bold tabular-nums tracking-tight -mt-4"
                     data-testid="timer-display"
                   >
                     {mins}:{secs.toString().padStart(2, '0')}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-[11px] text-muted-foreground -mt-0.5">
                     {running ? 'Total time left' : 'Tap start to begin'}
                   </p>
                 </motion.div>

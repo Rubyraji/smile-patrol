@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { nanoid } from 'nanoid';
 import { format, startOfWeek, addDays } from 'date-fns';
+import { DEFAULT_AGE, type ToothId } from './teeth';
 
 export type Session = 'morning' | 'afternoon';
 export type BrushRecord = Partial<Record<Session, boolean>>;
@@ -26,6 +27,8 @@ export type Kid = {
   name: string;
   emoji: string;
   color: string;
+  age: number; // years; controls which teeth are shown by default
+  missingTeeth: ToothId[]; // overrides: explicit "this tooth is out / not yet in"
   brushings: Record<string, BrushRecord>;
   rewards: Reward[];
   tasks: Task[];
@@ -168,6 +171,8 @@ function seedKids(): Kid[] {
       name: 'Lily',
       emoji: '🦄',
       color: '#F472B6',
+      age: 7,
+      missingTeeth: [],
       brushings: {
         [today]: { morning: true },
         [yesterday]: { morning: true, afternoon: true },
@@ -183,6 +188,8 @@ function seedKids(): Kid[] {
       name: 'Max',
       emoji: '🦁',
       color: '#FBBF24',
+      age: 5,
+      missingTeeth: [],
       brushings: {
         [yesterday]: { morning: true },
       },
@@ -193,9 +200,19 @@ function seedKids(): Kid[] {
   ];
 }
 
-function migrate(kid: Partial<Kid> & { id: string; name: string; emoji: string; color: string; brushings: Record<string, BrushRecord> }): Kid {
+function migrate(
+  kid: Partial<Kid> & {
+    id: string;
+    name: string;
+    emoji: string;
+    color: string;
+    brushings: Record<string, BrushRecord>;
+  },
+): Kid {
   return {
     ...kid,
+    age: typeof kid.age === 'number' ? kid.age : DEFAULT_AGE,
+    missingTeeth: Array.isArray(kid.missingTeeth) ? kid.missingTeeth : [],
     rewards: kid.rewards ?? [],
     tasks: (kid.tasks ?? []).map((t) => ({
       ...t,
@@ -252,7 +269,7 @@ export function useKids() {
   const setActiveId = useCallback((id: string) => setActiveIdState(id), []);
 
   const addKid = useCallback(
-    (name: string, emoji?: string, color?: string) => {
+    (name: string, emoji?: string, color?: string, age: number = DEFAULT_AGE) => {
       const id = nanoid();
       setKids((prev) => {
         const newKid: Kid = {
@@ -260,6 +277,8 @@ export function useKids() {
           name: name.trim() || 'Kiddo',
           emoji: emoji ?? KID_EMOJIS[prev.length % KID_EMOJIS.length],
           color: color ?? KID_COLORS[prev.length % KID_COLORS.length],
+          age,
+          missingTeeth: [],
           brushings: {},
           rewards: [],
           tasks: [],
@@ -278,11 +297,33 @@ export function useKids() {
   }, []);
 
   const updateKid = useCallback(
-    (id: string, updates: Partial<Pick<Kid, 'name' | 'emoji' | 'color'>>) => {
+    (
+      id: string,
+      updates: Partial<Pick<Kid, 'name' | 'emoji' | 'color' | 'age' | 'missingTeeth'>>,
+    ) => {
       setKids((prev) => prev.map((k) => (k.id === id ? { ...k, ...updates } : k)));
     },
-    []
+    [],
   );
+
+  const toggleMissingTooth = useCallback((id: string, toothId: ToothId) => {
+    setKids((prev) =>
+      prev.map((k) => {
+        if (k.id !== id) return k;
+        const has = k.missingTeeth.includes(toothId);
+        const next = has
+          ? k.missingTeeth.filter((t) => t !== toothId)
+          : [...k.missingTeeth, toothId];
+        return { ...k, missingTeeth: next };
+      }),
+    );
+  }, []);
+
+  const resetMissingTeeth = useCallback((id: string) => {
+    setKids((prev) =>
+      prev.map((k) => (k.id === id ? { ...k, missingTeeth: [] } : k)),
+    );
+  }, []);
 
   const setSession = useCallback(
     (kidId: string, dateStr: string, session: Session, value: boolean) => {
@@ -407,6 +448,8 @@ export function useKids() {
     addKid,
     removeKid,
     updateKid,
+    toggleMissingTooth,
+    resetMissingTeeth,
     setSession,
     toggleSession,
     unlockWeekReward,
