@@ -11,6 +11,16 @@ export type ToothArch = 'upper' | 'lower';
 export type ToothShape = 'incisor' | 'canine' | 'premolar' | 'molar';
 export type ToothPresence = 'absent' | 'primary' | 'permanent';
 
+// The three surfaces of a tooth that get brushed.
+//   outer  = buccal (cheek-side) for molars / facial (lip-side) for incisors
+//   biting = occlusal (chewing) for molars / incisal (edge) for front teeth
+//   inner  = palatal for upper teeth / lingual for lower teeth
+export type ToothSurface = 'outer' | 'biting' | 'inner';
+
+export const TOOTH_SURFACES: ToothSurface[] = ['outer', 'biting', 'inner'];
+
+export type BrushedMap = Map<ToothId, Set<ToothSurface>>;
+
 export type ToothId = string; // `${arch}-${side}-${position}`
 
 export type Tooth = {
@@ -143,4 +153,59 @@ export function archOrder(arch: ToothArch, teeth: Tooth[]): Tooth[] {
 
 export function countPresent(teeth: Tooth[]): number {
   return teeth.filter((t) => t.presence !== 'absent').length;
+}
+
+// Given the elapsed time (ms) of a brushing session, determine which surfaces
+// have been brushed for each tooth.
+//
+// Schedule:
+//   * 0..archDurationMs                  — upper arch sweep
+//       inside it: 3 equal passes (outer → biting → inner)
+//       each pass sweeps RHS to LHS through every present tooth in that arch
+//   * archDurationMs..2*archDurationMs   — lower arch sweep, same 3 passes
+export function computeBrushedSurfaces(
+  elapsedMs: number,
+  teeth: Tooth[],
+  archDurationMs = 60_000,
+): BrushedMap {
+  const result: BrushedMap = new Map();
+  const surfaceMs = archDurationMs / TOOTH_SURFACES.length;
+
+  const fillArch = (arch: ToothArch, startMs: number) => {
+    const present = archOrder(arch, teeth).filter((t) => t.presence !== 'absent');
+    if (present.length === 0) return;
+    const perTooth = surfaceMs / present.length;
+
+    for (let s = 0; s < TOOTH_SURFACES.length; s++) {
+      const surfaceStart = startMs + s * surfaceMs;
+      const sElapsed = elapsedMs - surfaceStart;
+      if (sElapsed <= 0) continue;
+      const teethDone = Math.min(present.length, Math.floor(sElapsed / perTooth));
+      for (let i = 0; i < teethDone; i++) {
+        const id = present[i].id;
+        let set = result.get(id);
+        if (!set) {
+          set = new Set<ToothSurface>();
+          result.set(id, set);
+        }
+        set.add(TOOTH_SURFACES[s]);
+      }
+    }
+  };
+
+  fillArch('upper', 0);
+  fillArch('lower', archDurationMs);
+
+  return result;
+}
+
+// All present teeth fully brushed — used for the "completed" celebration state.
+export function allBrushed(teeth: Tooth[]): BrushedMap {
+  const result: BrushedMap = new Map();
+  for (const t of teeth) {
+    if (t.presence !== 'absent') {
+      result.set(t.id, new Set<ToothSurface>(TOOTH_SURFACES));
+    }
+  }
+  return result;
 }

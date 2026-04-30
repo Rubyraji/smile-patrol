@@ -4,7 +4,12 @@ import { ArrowLeft, Play, Pause, RotateCcw, Sun, Moon, Check } from 'lucide-reac
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useKids, getCurrentSession, type Session } from '@/lib/store';
-import { getTeethForAge, DEFAULT_AGE } from '@/lib/teeth';
+import {
+  getTeethForAge,
+  DEFAULT_AGE,
+  computeBrushedSurfaces,
+  allBrushed,
+} from '@/lib/teeth';
 import { BrushDial } from '@/components/brush-dial';
 import { DentalArches } from '@/components/dental-arches';
 import { Button } from '@/components/ui/button';
@@ -114,6 +119,13 @@ export default function Brush() {
   const teeth = useMemo(
     () => getTeethForAge(activeKid.age ?? DEFAULT_AGE, activeKid.missingTeeth ?? []),
     [activeKid.age, activeKid.missingTeeth],
+  );
+
+  // Map of which tooth surfaces have been brushed so far in this session.
+  // Updates every animation frame as `elapsed` advances.
+  const brushedSurfaces = useMemo(
+    () => (completed ? allBrushed(teeth) : computeBrushedSurfaces(elapsed, teeth, HALF_MS)),
+    [completed, elapsed, teeth],
   );
 
   // Top teeth for the first minute, bottom teeth for the second minute
@@ -272,8 +284,8 @@ export default function Brush() {
                 >
                   <DentalArches
                     teeth={teeth}
-                    highlight="both"
-                    highlightColor={activeKid.color}
+                    brushedSurfaces={brushedSurfaces}
+                    brushColor={activeKid.color}
                     size={210}
                   />
                   <div
@@ -294,14 +306,8 @@ export default function Brush() {
                 >
                   <DentalArches
                     teeth={teeth}
-                    highlight={
-                      running || elapsed > 0
-                        ? zone.key === 'top'
-                          ? 'upper'
-                          : 'lower'
-                        : 'none'
-                    }
-                    highlightColor={activeKid.color}
+                    brushedSurfaces={brushedSurfaces}
+                    brushColor={activeKid.color}
                     size={220}
                   />
                   <p

@@ -421,8 +421,7 @@ function KidEditor({
               <DentalArches
                 teeth={previewTeeth}
                 size={240}
-                highlight="none"
-                highlightColor={color}
+                brushColor={color}
                 interactive={!!kid}
                 onToothClick={(id) => kid && onToggleTooth(id)}
               />
