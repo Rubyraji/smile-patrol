@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
-import { ArrowLeft, Trash2, Plus, X, Check, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, X, Check, RotateCcw, Lock } from 'lucide-react';
+import { ParentPinPad, type PinPadMode } from '@/components/parent-pin-pad';
 import {
   useKids,
   KID_EMOJIS,
@@ -47,12 +48,67 @@ export default function Kids() {
     addTask,
     updateTask,
     removeTask,
+    parentPin,
+    requireParentSignoff,
+    setParentPin,
+    setRequireParentSignoff,
   } = useKids();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Kid | null>(null);
+  const [pinPad, setPinPad] = useState<{
+    mode: PinPadMode;
+    title?: string;
+    subtitle?: string;
+    onSuccess: (pin: string) => void;
+  } | null>(null);
+  const [pendingPinRemoval, setPendingPinRemoval] = useState(false);
 
   const editing = editingId ? kids.find((k) => k.id === editingId) ?? null : null;
+
+  const openSetPin = (alsoEnable: boolean) => {
+    setPinPad({
+      mode: 'set',
+      title: 'Set parent PIN',
+      subtitle: 'Pick a 4-digit PIN. You\'ll enter it after each brush.',
+      onSuccess: (pin) => {
+        setParentPin(pin);
+        if (alsoEnable) setRequireParentSignoff(true);
+      },
+    });
+  };
+
+  const openChangePin = () => {
+    setPinPad({
+      mode: 'change',
+      title: 'Change parent PIN',
+      onSuccess: (pin) => setParentPin(pin),
+    });
+  };
+
+  const handleToggleSignoff = (val: boolean) => {
+    if (val) {
+      if (parentPin) {
+        setRequireParentSignoff(true);
+      } else {
+        // No PIN yet — kick off the set-PIN flow and turn on after success.
+        openSetPin(true);
+      }
+    } else {
+      setRequireParentSignoff(false);
+    }
+  };
+
+  const confirmRemovePin = () => {
+    setPendingPinRemoval(false);
+    if (!parentPin) return;
+    setPinPad({
+      mode: 'verify',
+      title: 'Confirm to remove PIN',
+      subtitle: 'Enter your current PIN to remove it.',
+      onSuccess: () => setParentPin(null),
+    });
+  };
 
   return (
     <div className="min-h-screen pb-32 px-5 pt-4">
@@ -100,6 +156,73 @@ export default function Kids() {
           <Plus className="h-5 w-5" />
           <span className="font-semibold">Add a kid</span>
         </button>
+
+        {/* Parent sign-off — global setting */}
+        <section
+          className="rounded-2xl bg-card border p-4 mt-6"
+          data-testid="parent-signoff-card"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <span className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                <Lock className="h-5 w-5 text-muted-foreground" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">Parent sign-off</p>
+                <p className="text-xs text-muted-foreground leading-snug mt-0.5">
+                  {requireParentSignoff
+                    ? "On — I'll ask for your PIN at the end of each brush before logging it."
+                    : parentPin
+                      ? 'Off — turn on to require your PIN before logging a brush.'
+                      : 'Optional — set a 4-digit PIN to confirm brushing yourself.'}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={requireParentSignoff}
+              onCheckedChange={handleToggleSignoff}
+              aria-label="Require parent PIN at end of brushing"
+              data-testid="parent-signoff-switch"
+            />
+          </div>
+          <div className="flex gap-2 mt-3">
+            {parentPin ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 rounded-xl h-9"
+                  onClick={openChangePin}
+                  data-testid="change-pin-button"
+                >
+                  Change PIN
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-xl h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setPendingPinRemoval(true)}
+                  data-testid="remove-pin-button"
+                >
+                  Remove
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full rounded-xl h-9"
+                onClick={() => openSetPin(false)}
+                data-testid="set-pin-button"
+              >
+                Set PIN
+              </Button>
+            )}
+          </div>
+        </section>
       </main>
 
       {(editing || adding) && (
@@ -156,6 +279,40 @@ export default function Kids() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={pendingPinRemoval}
+        onOpenChange={(o) => !o && setPendingPinRemoval(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove parent PIN?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You'll need to enter your current PIN to remove it. Sign-off will
+              also turn off until you set a new one.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemovePin}
+              data-testid="confirm-remove-pin"
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ParentPinPad
+        open={!!pinPad}
+        onOpenChange={(o) => !o && setPinPad(null)}
+        mode={pinPad?.mode ?? 'verify'}
+        expectedPin={parentPin}
+        onSuccess={(pin) => pinPad?.onSuccess(pin)}
+        title={pinPad?.title}
+        subtitle={pinPad?.subtitle}
+      />
     </div>
   );
 }

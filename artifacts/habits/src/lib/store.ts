@@ -76,6 +76,38 @@ export const TASK_EMOJIS = ['🧵', '🪥', '💧', '👅', '🔄', '🥤', '�
 const STORAGE_KEY = 'brush.kids.v1';
 const ACTIVE_KEY = 'brush.activeKid.v1';
 const SEED_KEY = 'brush.seeded.v1';
+const PARENT_KEY = 'brush.parent.v1';
+
+// Parent settings — global (not per-kid).
+//   parentPin: 4-digit string the parent enters to sign off on brushing.
+//     Stored in localStorage in plaintext intentionally; this is a
+//     kid-resistant gate, not a security feature.
+//   requireParentSignoff: whether to require the PIN at the end of every
+//     brush session. Both must be set for sign-off to actually apply.
+export type ParentSettings = {
+  parentPin: string | null;
+  requireParentSignoff: boolean;
+};
+
+function loadParentSettings(): ParentSettings {
+  try {
+    const raw = localStorage.getItem(PARENT_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<ParentSettings>;
+      const pin =
+        typeof parsed.parentPin === 'string' && /^\d{4}$/.test(parsed.parentPin)
+          ? parsed.parentPin
+          : null;
+      return {
+        parentPin: pin,
+        requireParentSignoff: !!parsed.requireParentSignoff && !!pin,
+      };
+    }
+  } catch (e) {
+    console.error('Failed to load parent settings', e);
+  }
+  return { parentPin: null, requireParentSignoff: false };
+}
 
 export type CharacterCategory = {
   key: string;
@@ -247,6 +279,7 @@ export function useKids() {
     const initial = loadKids();
     return initial[0]?.id ?? null;
   });
+  const [parentSettings, setParentSettingsState] = useState<ParentSettings>(loadParentSettings);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(kids));
@@ -255,6 +288,26 @@ export function useKids() {
   useEffect(() => {
     if (activeId) localStorage.setItem(ACTIVE_KEY, activeId);
   }, [activeId]);
+
+  useEffect(() => {
+    localStorage.setItem(PARENT_KEY, JSON.stringify(parentSettings));
+  }, [parentSettings]);
+
+  const setParentPin = useCallback((pin: string | null) => {
+    setParentSettingsState((s) => ({
+      // If clearing the PIN, also force the toggle off — can't require what doesn't exist.
+      parentPin: pin,
+      requireParentSignoff: pin ? s.requireParentSignoff : false,
+    }));
+  }, []);
+
+  const setRequireParentSignoff = useCallback((val: boolean) => {
+    setParentSettingsState((s) => ({
+      ...s,
+      // Only allow turning on if a PIN is actually set.
+      requireParentSignoff: val && !!s.parentPin,
+    }));
+  }, []);
 
   useEffect(() => {
     if (kids.length === 0) {
@@ -457,6 +510,10 @@ export function useKids() {
     updateTask,
     removeTask,
     toggleTaskCompletion,
+    parentPin: parentSettings.parentPin,
+    requireParentSignoff: parentSettings.requireParentSignoff,
+    setParentPin,
+    setRequireParentSignoff,
   };
 }
 

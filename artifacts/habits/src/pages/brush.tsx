@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { ArrowLeft, Play, Pause, RotateCcw, Sun, Moon, Check } from 'lucide-react';
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  RotateCcw,
+  Sun,
+  Moon,
+  Check,
+  Lock,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useKids, getCurrentSession, type Session } from '@/lib/store';
@@ -12,6 +21,7 @@ import {
 } from '@/lib/teeth';
 import { BrushDial } from '@/components/brush-dial';
 import { DentalArches } from '@/components/dental-arches';
+import { ParentPinPad } from '@/components/parent-pin-pad';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -42,11 +52,23 @@ const ZONES: Zone[] = [
 
 export default function Brush() {
   const [, navigate] = useLocation();
-  const { activeKid, setSession: persistSession } = useKids();
+  const {
+    activeKid,
+    setSession: persistSession,
+    parentPin,
+    requireParentSignoff,
+  } = useKids();
   const [session, setSession] = useState<Session>(getCurrentSession());
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [completed, setCompleted] = useState(false);
+  // Whether the just-finished session has been confirmed (either no signoff
+  // required, or the parent has entered the PIN). Sessions are only persisted
+  // once this flips true.
+  const [signedOff, setSignedOff] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+
+  const signoffRequired = requireParentSignoff && !!parentPin;
 
   const rafRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -64,8 +86,14 @@ export default function Brush() {
         baseRef.current = DURATION_MS;
         setRunning(false);
         setCompleted(true);
-        if (activeKid) {
-          persistSession(activeKid.id, format(new Date(), 'yyyy-MM-dd'), session, true);
+        if (activeKid && !signoffRequired) {
+          persistSession(
+            activeKid.id,
+            format(new Date(), 'yyyy-MM-dd'),
+            session,
+            true,
+          );
+          setSignedOff(true);
         }
         return;
       }
@@ -82,7 +110,7 @@ export default function Brush() {
         if (baseRef.current > DURATION_MS) baseRef.current = DURATION_MS;
       }
     };
-  }, [running, activeKid, persistSession, session]);
+  }, [running, activeKid, persistSession, session, signoffRequired]);
 
   const handleStart = () => {
     if (completed) handleReset();
@@ -93,8 +121,21 @@ export default function Brush() {
     setRunning(false);
     setElapsed(0);
     setCompleted(false);
+    setSignedOff(false);
     baseRef.current = 0;
     startTimeRef.current = null;
+  };
+
+  const handlePinSuccess = () => {
+    if (activeKid) {
+      persistSession(
+        activeKid.id,
+        format(new Date(), 'yyyy-MM-dd'),
+        session,
+        true,
+      );
+    }
+    setSignedOff(true);
   };
 
   if (!activeKid) {
@@ -289,13 +330,24 @@ export default function Brush() {
                     size={210}
                   />
                   <div
-                    className="-mt-6 w-14 h-14 rounded-full flex items-center justify-center shadow-md"
+                    className={cn(
+                      '-mt-6 w-14 h-14 rounded-full flex items-center justify-center shadow-md',
+                      signoffRequired && !signedOff && 'opacity-70',
+                    )}
                     style={{ backgroundColor: activeKid.color }}
                   >
-                    <Check className="h-8 w-8 text-white" strokeWidth={3} />
+                    {signoffRequired && !signedOff ? (
+                      <Lock className="h-7 w-7 text-white" strokeWidth={2.5} />
+                    ) : (
+                      <Check className="h-8 w-8 text-white" strokeWidth={3} />
+                    )}
                   </div>
                   <p className="text-lg font-bold mt-2">All done!</p>
-                  <p className="text-xs text-muted-foreground">Sparkly clean ✨</p>
+                  <p className="text-xs text-muted-foreground">
+                    {signoffRequired && !signedOff
+                      ? 'Show a parent to confirm.'
+                      : 'Sparkly clean ✨'}
+                  </p>
                 </motion.div>
               ) : (
                 <motion.div
@@ -355,15 +407,28 @@ export default function Brush() {
       <div className="max-w-md w-full mx-auto mt-6">
         {completed ? (
           <div className="space-y-3">
-            <Button
-              onClick={() => navigate('/')}
-              size="lg"
-              className="w-full h-14 text-base font-bold rounded-2xl shadow-md"
-              style={{ backgroundColor: activeKid.color, color: '#fff' }}
-              data-testid="finish-button"
-            >
-              See my week
-            </Button>
+            {signoffRequired && !signedOff ? (
+              <Button
+                onClick={() => setPinOpen(true)}
+                size="lg"
+                className="w-full h-14 text-base font-bold rounded-2xl shadow-md gap-2"
+                style={{ backgroundColor: activeKid.color, color: '#fff' }}
+                data-testid="parent-confirm-button"
+              >
+                <Lock className="h-5 w-5" />
+                Parent: tap to confirm
+              </Button>
+            ) : (
+              <Button
+                onClick={() => navigate('/')}
+                size="lg"
+                className="w-full h-14 text-base font-bold rounded-2xl shadow-md"
+                style={{ backgroundColor: activeKid.color, color: '#fff' }}
+                data-testid="finish-button"
+              >
+                See my week
+              </Button>
+            )}
             <Button
               onClick={handleReset}
               variant="ghost"
@@ -410,6 +475,17 @@ export default function Brush() {
           </div>
         )}
       </div>
+
+      <ParentPinPad
+        open={pinOpen}
+        onOpenChange={setPinOpen}
+        mode="verify"
+        expectedPin={parentPin}
+        onSuccess={handlePinSuccess}
+        accentColor={activeKid.color}
+        title="Parent sign-off"
+        subtitle={`Enter your PIN to confirm ${activeKid.name}'s brush.`}
+      />
     </div>
   );
 }
