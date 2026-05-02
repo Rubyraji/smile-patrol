@@ -25,10 +25,10 @@ type Props = {
 type ToothDims = { ow: number; iw: number; h: number; r: number };
 
 const TOOTH_DIMS: Record<ToothShape, ToothDims> = {
-  incisor:  { ow: 13, iw:  9, h: 21, r: 5.5 },
-  canine:   { ow: 13, iw:  6, h: 25, r: 5.5 },
-  premolar: { ow: 16, iw: 13, h: 21, r: 6.5 },
-  molar:    { ow: 20, iw: 17, h: 24, r: 7.5 },
+  incisor:  { ow: 12, iw: 10, h: 19, r: 5   },
+  canine:   { ow: 12, iw: 10, h: 24, r: 5   },
+  premolar: { ow: 15, iw: 13, h: 20, r: 6   },
+  molar:    { ow: 21, iw: 17, h: 22, r: 7   },
 };
 
 // Scale down primary teeth — they are smaller and more rounded.
@@ -37,34 +37,90 @@ const PRIMARY_SCALE = 0.82;
 // Band proportions (outer : biting : inner) of the tooth height.
 const BAND_RATIOS: Record<ToothShape, [number, number, number]> = {
   incisor:  [0.30, 0.40, 0.30],
-  canine:   [0.30, 0.40, 0.30],
+  canine:   [0.28, 0.44, 0.28],
   premolar: [0.26, 0.48, 0.26],
   molar:    [0.24, 0.52, 0.24],
 };
 
-// Build a trapezoidal outline path (occlusal view).
-// ow = outer (labial/buccal) width  — rendered at y = -h/2
-// iw = inner (lingual/palatal) width — rendered at y = +h/2
-function toothPath(ow: number, iw: number, h: number, r: number): string {
+// How many extra px the bottom fill-band must extend to cover cusp protrusions.
+const CUSP_EXTRA: Record<ToothShape, number> = {
+  incisor: 0,
+  canine:  6,
+  premolar: 5,
+  molar:   6,
+};
+
+// Shape-specific outline paths.
+// t = -h/2 = outer (labial/buccal) edge; b = +h/2 = inner (lingual/incisal) edge.
+// Canines, premolars, and molars extend cusp protrusions beyond b — the clip
+// path includes them so the fill bands colour them correctly.
+function toothPath(ow: number, iw: number, h: number, r: number, shape: ToothShape): string {
   const t = -h / 2;
   const b = h / 2;
-  const lt = -ow / 2, rt = ow / 2;
-  const lb = -iw / 2, rb = iw / 2;
-  // Clamp corner radius so it doesn't exceed half the narrowest width
+  const lo = -ow / 2, ro = ow / 2;
+  const li = -iw / 2, ri = iw / 2;
   const rT = Math.min(r, ow / 2 - 0.5);
   const rB = Math.min(r, iw / 2 - 0.5);
-  return [
-    `M ${lt + rT} ${t}`,
-    `L ${rt - rT} ${t}`,
-    `Q ${rt} ${t} ${rt} ${t + rT}`,
-    `L ${rb} ${b - rB}`,
-    `Q ${rb} ${b} ${rb - rB} ${b}`,
-    `L ${lb + rB} ${b}`,
-    `Q ${lb} ${b} ${lb} ${b - rB}`,
-    `L ${lt} ${t + rT}`,
-    `Q ${lt} ${t} ${lt + rT} ${t}`,
+
+  // Outer (labial) edge — slightly convex arc, then right side down.
+  const outer = [
+    `M ${lo + rT} ${t}`,
+    `Q 0 ${t - ow * 0.05} ${ro - rT} ${t}`,
+    `Q ${ro} ${t} ${ro} ${t + rT}`,
+    `L ${ri} ${b - rB}`,
+  ];
+
+  // Close — left side up + top-left corner.
+  const close = [
+    `L ${lo} ${t + rT}`,
+    `Q ${lo} ${t} ${lo + rT} ${t}`,
     `Z`,
-  ].join(' ');
+  ];
+
+  let inner: string[];
+
+  if (shape === 'incisor') {
+    // Nearly rectangular; very gentle incisal concavity.
+    inner = [
+      `Q ${ri} ${b} ${ri - rB} ${b}`,
+      `Q 0 ${b - iw * 0.04} ${li + rB} ${b}`,
+      `Q ${li} ${b} ${li} ${b - rB}`,
+    ];
+
+  } else if (shape === 'canine') {
+    // Both sides converge smoothly to a single cusp tip.
+    const cH = Math.min(4.5, h * 0.15);
+    inner = [
+      `Q ${ri} ${b} ${ri - rB * 0.5} ${b}`,
+      `C ${ri * 0.5} ${b + 0.5} 1 ${b + cH} 0 ${b + cH}`,
+      `C -1 ${b + cH} ${li * 0.5} ${b + 0.5} ${li + rB * 0.5} ${b}`,
+      `Q ${li} ${b} ${li} ${b - rB * 0.5}`,
+    ];
+
+  } else if (shape === 'premolar') {
+    // Two lobes separated by a central groove (bicuspid).
+    const cH = iw * 0.32;
+    const groove = b - iw * 0.07;
+    inner = [
+      `Q ${ri} ${b} ${ri - rB} ${b}`,
+      `C ${ri * 0.55} ${b + cH} ${ri * 0.1} ${b + cH} 0 ${groove}`,
+      `C ${li * 0.1} ${b + cH} ${li * 0.55} ${b + cH} ${li + rB} ${b}`,
+      `Q ${li} ${b} ${li} ${b - rB}`,
+    ];
+
+  } else {
+    // Molar — two broader lobes with a deeper central groove.
+    const cH = iw * 0.34;
+    const groove = b - iw * 0.08;
+    inner = [
+      `Q ${ri} ${b} ${ri - rB} ${b}`,
+      `C ${ri * 0.62} ${b + cH} ${ri * 0.12} ${b + cH} 0 ${groove}`,
+      `C ${li * 0.12} ${b + cH} ${li * 0.62} ${b + cH} ${li + rB} ${b}`,
+      `Q ${li} ${b} ${li} ${b - rB}`,
+    ];
+  }
+
+  return [...outer, ...inner, ...close].join(' ');
 }
 
 const EMPTY_BRUSHED = new Set<ToothSurface>();
@@ -204,7 +260,8 @@ function ToothGlyph({
   const bottomY = midY + midH;
 
   const fillFor = (s: ToothSurface) => (brushed.has(s) ? brushColor : '#ffffff');
-  const outline = toothPath(dims.ow, dims.iw, dims.h, dims.r);
+  const cuspExtra = CUSP_EXTRA[tooth.shape];
+  const outline = toothPath(dims.ow, dims.iw, dims.h, dims.r, tooth.shape);
 
   // Max width for the band rects (they will be clipped anyway)
   const maxW = Math.max(dims.ow, dims.iw);
@@ -256,12 +313,12 @@ function ToothGlyph({
               fill={fillFor('biting')}
               style={{ transition }}
             />
-            {/* Inner surface band */}
+            {/* Inner surface band — extended to cover cusp protrusions */}
             <rect
               x={-maxW / 2}
               y={bottomY}
               width={maxW}
-              height={bottomH}
+              height={bottomH + cuspExtra}
               fill={fillFor(bottomSurface)}
               style={{ transition }}
             />
@@ -310,7 +367,7 @@ function ToothGlyph({
       ) : (
         // Absent slot — dashed outline
         <path
-          d={toothPath(base.ow, base.iw, base.h, base.r)}
+          d={toothPath(base.ow, base.iw, base.h, base.r, tooth.shape)}
           fill="none"
           stroke="hsl(var(--muted-foreground) / 0.3)"
           strokeWidth={1}
