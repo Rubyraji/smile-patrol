@@ -18,6 +18,7 @@ import { TaskWeekGrid } from '@/components/task-week-grid';
 import { KidSwitcher } from '@/components/kid-switcher';
 import { RewardCard } from '@/components/reward-card';
 import { StickerCollection } from '@/components/sticker-collection';
+import { StickerShelf } from '@/components/sticker-shelf';
 import { RewardCelebration } from '@/components/reward-celebration';
 import { TodayChecklist } from '@/components/today-checklist';
 import { Button } from '@/components/ui/button';
@@ -205,7 +206,10 @@ export default function Home() {
           onClaim={handleClaim}
         />
 
-        {/* Sticker collection — kids love seeing their stickers */}
+        {/* 3-min brush sticker shelf */}
+        <StickerShelf kid={activeKid} />
+
+        {/* Weekly reward sticker collection */}
         <StickerCollection rewards={activeKid.rewards} color={activeKid.color} />
 
         {/* Parent view — week grid (smaller, subdued) */}

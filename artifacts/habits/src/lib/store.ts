@@ -22,6 +22,12 @@ export type Task = {
   time: TaskTime;
 };
 
+export type BrushSticker = {
+  date: string;   // 'yyyy-MM-dd'
+  sticker: string; // emoji
+  name: string;
+};
+
 export type Kid = {
   id: string;
   name: string;
@@ -33,6 +39,7 @@ export type Kid = {
   rewards: Reward[];
   tasks: Task[];
   taskCompletions: Record<string, Record<string, boolean>>; // taskId -> dateStr -> done
+  brushStickers: BrushSticker[]; // earned by completing a 3-minute brush
 };
 
 export const TASK_PRESETS: Array<{ name: string; emoji: string; time: TaskTime }> = [
@@ -214,6 +221,7 @@ function seedKids(): Kid[] {
       taskCompletions: {
         [flossId]: { [yesterday]: true },
       },
+      brushStickers: [],
     },
     {
       id: nanoid(),
@@ -228,6 +236,7 @@ function seedKids(): Kid[] {
       rewards: [],
       tasks: [],
       taskCompletions: {},
+      brushStickers: [],
     },
   ];
 }
@@ -251,6 +260,7 @@ function migrate(
       time: (t as Partial<Task>).time ?? 'anytime',
     })),
     taskCompletions: kid.taskCompletions ?? {},
+    brushStickers: kid.brushStickers ?? [],
   };
 }
 
@@ -336,6 +346,7 @@ export function useKids() {
           rewards: [],
           tasks: [],
           taskCompletions: {},
+          brushStickers: [],
         };
         return [...prev, newKid];
       });
@@ -467,6 +478,23 @@ export function useKids() {
     []
   );
 
+  const awardBrushSticker = useCallback((kidId: string, dateStr: string) => {
+    setKids((prev) =>
+      prev.map((k) => {
+        if (k.id !== kidId) return k;
+        const idx = k.brushStickers.length % REWARD_STICKERS.length;
+        const pick = REWARD_STICKERS[idx];
+        return {
+          ...k,
+          brushStickers: [
+            ...k.brushStickers,
+            { date: dateStr, sticker: pick.emoji, name: pick.name },
+          ],
+        };
+      }),
+    );
+  }, []);
+
   const unlockWeekReward = useCallback(
     (kidId: string, weekStartKey: string): Reward | null => {
       let unlocked: Reward | null = null;
@@ -515,6 +543,7 @@ export function useKids() {
     removeTask,
     toggleTaskCompletion,
     setKidsFromRemote,
+    awardBrushSticker,
     parentPin: parentSettings.parentPin,
     requireParentSignoff: parentSettings.requireParentSignoff,
     setParentPin,

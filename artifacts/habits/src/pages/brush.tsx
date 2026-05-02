@@ -13,7 +13,7 @@ import {
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useKidsContext as useKids } from '@/lib/kids-context';
-import { getCurrentSession, type Session } from '@/lib/store';
+import { getCurrentSession, REWARD_STICKERS, type Session } from '@/lib/store';
 import {
   getTeethForAge,
   DEFAULT_AGE,
@@ -35,9 +35,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
-
-const DURATION_MS = 120_000; // 2 minutes
-const HALF_MS = 60_000; // 1 minute per zone
 
 type Zone = {
   key: 'top' | 'bottom';
@@ -69,19 +66,26 @@ export default function Brush() {
     parentPin,
     requireParentSignoff,
     setParentPin,
+    awardBrushSticker,
   } = useKids();
+
   const [session, setSession] = useState<Session>(getCurrentSession());
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [completed, setCompleted] = useState(false);
-  // Whether the just-finished session has been confirmed (either no signoff
-  // required, or the parent has entered the PIN). Sessions are only persisted
-  // once this flips true.
   const [signedOff, setSignedOff] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
   const [forgotPinOpen, setForgotPinOpen] = useState(false);
 
+  // null = not chosen yet; 2 = 2-minute; 3 = 3-minute (earns a sticker)
+  const [durationChoice, setDurationChoice] = useState<2 | 3 | null>(null);
+  const [stickerEarned, setStickerEarned] = useState<{ emoji: string; name: string } | null>(null);
+
   const signoffRequired = requireParentSignoff && !!parentPin;
+
+  // Derived constants from choice
+  const durationMs = (durationChoice ?? 2) * 60_000;
+  const halfMs = durationMs / 2;
 
   const rafRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -94,9 +98,9 @@ export default function Brush() {
     const tick = (now: number) => {
       const startedAt = startTimeRef.current ?? now;
       const e = baseRef.current + (now - startedAt);
-      if (e >= DURATION_MS) {
-        setElapsed(DURATION_MS);
-        baseRef.current = DURATION_MS;
+      if (e >= durationMs) {
+        setElapsed(durationMs);
+        baseRef.current = durationMs;
         setRunning(false);
         setCompleted(true);
         if (activeKid && !signoffRequired) {
@@ -108,6 +112,14 @@ export default function Brush() {
           );
           setSignedOff(true);
         }
+        // Award a collectible sticker for the 3-minute bonus brush
+        if (durationChoice === 3 && activeKid) {
+          const kidStickers = activeKid.brushStickers ?? [];
+          const idx = kidStickers.length % REWARD_STICKERS.length;
+          const pick = REWARD_STICKERS[idx];
+          setStickerEarned({ emoji: pick.emoji, name: pick.name });
+          awardBrushSticker(activeKid.id, format(new Date(), 'yyyy-MM-dd'));
+        }
         return;
       }
       setElapsed(e);
@@ -117,13 +129,12 @@ export default function Brush() {
     rafRef.current = requestAnimationFrame(tick);
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      // capture progress when pausing
       if (startTimeRef.current !== null) {
         baseRef.current = baseRef.current + (performance.now() - startTimeRef.current);
-        if (baseRef.current > DURATION_MS) baseRef.current = DURATION_MS;
+        if (baseRef.current > durationMs) baseRef.current = durationMs;
       }
     };
-  }, [running, activeKid, persistSession, session, signoffRequired]);
+  }, [running, activeKid, persistSession, session, signoffRequired, durationMs, durationChoice, awardBrushSticker]);
 
   const handleStart = () => {
     if (completed) handleReset();
@@ -135,6 +146,8 @@ export default function Brush() {
     setElapsed(0);
     setCompleted(false);
     setSignedOff(false);
+    setStickerEarned(null);
+    setDurationChoice(null);
     baseRef.current = 0;
     startTimeRef.current = null;
   };
@@ -152,8 +165,6 @@ export default function Brush() {
   };
 
   const handleForgotPin = () => {
-    // Persist the session (sign-off is being waived), then clear the PIN
-    // so the family can set a new one via Kids > Parent sign-off.
     if (activeKid) {
       persistSession(
         activeKid.id,
@@ -162,7 +173,7 @@ export default function Brush() {
         true,
       );
     }
-    setParentPin(null); // also clears requireParentSignoff in store
+    setParentPin(null);
     setSignedOff(true);
   };
 
@@ -179,8 +190,8 @@ export default function Brush() {
     );
   }
 
-  const progress = elapsed / DURATION_MS;
-  const remainingMs = Math.max(0, DURATION_MS - elapsed);
+  const progress = elapsed / durationMs;
+  const remainingMs = Math.max(0, durationMs - elapsed);
   const remainingSec = Math.ceil(remainingMs / 1000);
   const mins = Math.floor(remainingSec / 60);
   const secs = remainingSec % 60;
@@ -190,19 +201,16 @@ export default function Brush() {
     [activeKid.age, activeKid.missingTeeth],
   );
 
-  // Map of which tooth surfaces have been brushed so far in this session.
-  // Updates every animation frame as `elapsed` advances.
   const brushedSurfaces = useMemo(
-    () => (completed ? allBrushed(teeth) : computeBrushedSurfaces(elapsed, teeth, HALF_MS)),
-    [completed, elapsed, teeth],
+    () => (completed ? allBrushed(teeth) : computeBrushedSurfaces(elapsed, teeth, halfMs)),
+    [completed, elapsed, teeth, halfMs],
   );
 
-  // Top teeth for the first minute, bottom teeth for the second minute
-  const zoneIdx = Math.min(1, Math.floor(elapsed / HALF_MS));
+  const zoneIdx = Math.min(1, Math.floor(elapsed / halfMs));
   const zone = ZONES[zoneIdx];
   const zoneRemainingSec = Math.max(
     0,
-    Math.ceil((HALF_MS * (zoneIdx + 1) - elapsed) / 1000),
+    Math.ceil((halfMs * (zoneIdx + 1) - elapsed) / 1000),
   );
 
   return (
@@ -232,7 +240,7 @@ export default function Brush() {
       </header>
 
       {/* Session toggle */}
-      <div className="max-w-md w-full mx-auto mb-6">
+      <div className="max-w-md w-full mx-auto mb-5">
         <div className="bg-card border rounded-full p-1 flex gap-1">
           {(['morning', 'afternoon'] as Session[]).map((s) => {
             const active = s === session;
@@ -248,7 +256,7 @@ export default function Brush() {
                   active
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
-                  running && 'opacity-60 cursor-not-allowed'
+                  running && 'opacity-60 cursor-not-allowed',
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -259,10 +267,64 @@ export default function Brush() {
         </div>
       </div>
 
-      {/* Zone reminder popup — visible whenever the timer is active */}
-      <div className="max-w-md w-full mx-auto mb-4 min-h-[88px]">
+      {/* Duration picker / Zone reminder */}
+      <div className="max-w-md w-full mx-auto mb-4">
         <AnimatePresence mode="wait">
-          {completed ? null : running || elapsed > 0 ? (
+          {durationChoice === null ? (
+            /* ── Duration picker ──────────────────────────────────────── */
+            <motion.div
+              key="picker"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+            >
+              <p className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground text-center mb-3">
+                How long will you brush?
+              </p>
+              <div className="flex gap-3">
+                {/* 2-minute option */}
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setDurationChoice(2)}
+                  data-testid="duration-2min"
+                  className="flex-1 flex flex-col items-center gap-1.5 py-5 rounded-2xl border-2 bg-card transition-all"
+                  style={{ borderColor: `${activeKid.color}55` }}
+                >
+                  <span className="text-3xl">🕐</span>
+                  <span className="text-xl font-black">2 min</span>
+                  <span className="text-xs text-muted-foreground font-semibold">Standard</span>
+                </motion.button>
+
+                {/* 3-minute option — bonus highlighted */}
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setDurationChoice(3)}
+                  data-testid="duration-3min"
+                  className="flex-1 flex flex-col items-center gap-1.5 py-5 rounded-2xl border-2 transition-all relative overflow-hidden"
+                  style={{
+                    borderColor: activeKid.color,
+                    backgroundColor: `${activeKid.color}18`,
+                  }}
+                >
+                  <span
+                    className="absolute top-2 right-2 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full text-white leading-none"
+                    style={{ backgroundColor: activeKid.color }}
+                  >
+                    BONUS
+                  </span>
+                  <span className="text-3xl">⭐</span>
+                  <span className="text-xl font-black">3 min</span>
+                  <span className="text-xs font-bold" style={{ color: activeKid.color }}>
+                    Earn a sticker!
+                  </span>
+                </motion.button>
+              </div>
+            </motion.div>
+          ) : completed ? null : running || elapsed > 0 ? (
+            /* ── Active zone banner ───────────────────────────────────── */
             <motion.div
               key={zone.key}
               initial={{ opacity: 0, y: -16, scale: 0.92 }}
@@ -292,9 +354,7 @@ export default function Brush() {
                   Now brushing
                 </p>
                 <p className="text-lg font-bold leading-tight">{zone.label}!</p>
-                <p className="text-xs text-muted-foreground leading-snug">
-                  {zone.hint}
-                </p>
+                <p className="text-xs text-muted-foreground leading-snug">{zone.hint}</p>
               </div>
               <div className="text-right shrink-0">
                 <p
@@ -304,12 +364,11 @@ export default function Brush() {
                 >
                   {zoneRemainingSec}s
                 </p>
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">
-                  left
-                </p>
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">left</p>
               </div>
             </motion.div>
           ) : (
+            /* ── Ready banner (duration chosen, not started) ──────────── */
             <motion.div
               key="ready"
               initial={{ opacity: 0 }}
@@ -324,7 +383,10 @@ export default function Brush() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Two minutes
+                  {durationChoice === 3 ? 'Three minutes' : 'Two minutes'}
+                  {durationChoice === 3 && (
+                    <span className="ml-2 text-amber-500">⭐ sticker mode!</span>
+                  )}
                 </p>
                 <p className="text-sm font-bold leading-tight">
                   Top teeth first, then bottom!
@@ -355,7 +417,7 @@ export default function Brush() {
                     teeth={teeth}
                     brushedSurfaces={brushedSurfaces}
                     brushColor={activeKid.color}
-                    size={210}
+                    size={stickerEarned ? 180 : 210}
                   />
                   <div
                     className={cn(
@@ -370,12 +432,45 @@ export default function Brush() {
                       <Check className="h-8 w-8 text-white" strokeWidth={3} />
                     )}
                   </div>
-                  <p className="text-lg font-bold mt-2">All done!</p>
+                  <p className="text-lg font-bold mt-1.5">All done!</p>
                   <p className="text-xs text-muted-foreground">
                     {signoffRequired && !signedOff
                       ? 'Show a parent to confirm.'
                       : 'Sparkly clean ✨'}
                   </p>
+
+                  {/* Sticker reveal — only for 3-min brush */}
+                  {stickerEarned && (
+                    <motion.div
+                      key="sticker-reveal"
+                      initial={{ scale: 0, rotate: -20, opacity: 0 }}
+                      animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 260,
+                        damping: 14,
+                        delay: 0.45,
+                      }}
+                      className="mt-3 flex flex-col items-center gap-1"
+                    >
+                      <div
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-lg border-2"
+                        style={{
+                          backgroundColor: `${activeKid.color}22`,
+                          borderColor: activeKid.color,
+                        }}
+                      >
+                        {stickerEarned.emoji}
+                      </div>
+                      <p
+                        className="text-[11px] font-extrabold uppercase tracking-wide"
+                        style={{ color: activeKid.color }}
+                      >
+                        +1 sticker!
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">{stickerEarned.name}</p>
+                    </motion.div>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div
@@ -394,10 +489,16 @@ export default function Brush() {
                     className="text-3xl font-bold tabular-nums tracking-tight -mt-4"
                     data-testid="timer-display"
                   >
-                    {mins}:{secs.toString().padStart(2, '0')}
+                    {durationChoice !== null
+                      ? `${mins}:${secs.toString().padStart(2, '0')}`
+                      : '--:--'}
                   </p>
                   <p className="text-[11px] text-muted-foreground -mt-0.5">
-                    {running ? 'Total time left' : 'Tap start to begin'}
+                    {running
+                      ? 'Total time left'
+                      : durationChoice !== null
+                        ? 'Tap start to begin'
+                        : 'Choose a time above'}
                   </p>
                 </motion.div>
               )}
@@ -405,30 +506,34 @@ export default function Brush() {
           </div>
         </BrushDial>
 
-        {/* Zone pips — one per minute */}
-        <div className="flex gap-3 mt-6">
-          {ZONES.map((z, i) => {
-            const active = zoneIdx === i && (running || elapsed > 0);
-            const done = elapsed >= HALF_MS * (i + 1);
-            return (
-              <div
-                key={z.key}
-                className="flex items-center gap-1.5"
-                data-testid={`zone-pip-${z.key}`}
-              >
+        {/* Zone progress pips */}
+        {durationChoice !== null && (
+          <div className="flex gap-3 mt-6">
+            {ZONES.map((z, i) => {
+              const active = zoneIdx === i && (running || elapsed > 0);
+              const done = elapsed >= halfMs * (i + 1);
+              return (
                 <div
-                  className={cn(
-                    'h-2 rounded-full transition-all duration-300',
-                    done ? 'w-12 bg-primary' : active ? 'w-12 bg-primary/60' : 'w-10 bg-muted',
-                  )}
-                />
-                <span className="text-xs font-semibold text-muted-foreground">
-                  {z.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+                  key={z.key}
+                  className="flex items-center gap-1.5"
+                  data-testid={`zone-pip-${z.key}`}
+                >
+                  <div
+                    className={cn(
+                      'h-2 rounded-full transition-all duration-300',
+                      done
+                        ? 'w-12 bg-primary'
+                        : active
+                          ? 'w-12 bg-primary/60'
+                          : 'w-10 bg-muted',
+                    )}
+                  />
+                  <span className="text-xs font-semibold text-muted-foreground">{z.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Controls */}
@@ -475,7 +580,7 @@ export default function Brush() {
               variant="outline"
               size="lg"
               className="rounded-full w-14 h-14 p-0 shrink-0"
-              disabled={elapsed === 0}
+              disabled={elapsed === 0 && durationChoice === null}
               data-testid="reset-button"
               aria-label="Reset"
             >
@@ -486,6 +591,7 @@ export default function Brush() {
               size="lg"
               className="flex-1 h-16 rounded-2xl text-lg font-bold shadow-md gap-2"
               style={{ backgroundColor: activeKid.color, color: '#fff' }}
+              disabled={durationChoice === null}
               data-testid={running ? 'pause-button' : 'start-button'}
             >
               {running ? (
@@ -521,9 +627,8 @@ export default function Brush() {
           <AlertDialogHeader>
             <AlertDialogTitle>Reset parent PIN?</AlertDialogTitle>
             <AlertDialogDescription>
-              Your PIN will be cleared and sign-off will be turned off.
-              This brush will be saved as normal. You can set a new PIN any
-              time in Kids settings.
+              Your PIN will be cleared and sign-off will be turned off. This brush will be saved
+              as normal. You can set a new PIN any time in Kids settings.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
