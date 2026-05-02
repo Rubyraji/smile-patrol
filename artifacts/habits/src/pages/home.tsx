@@ -18,7 +18,7 @@ import { TaskWeekGrid } from '@/components/task-week-grid';
 import { KidSwitcher } from '@/components/kid-switcher';
 import { RewardCard } from '@/components/reward-card';
 import { StickerCollection } from '@/components/sticker-collection';
-import { StickerShelf } from '@/components/sticker-shelf';
+import { PetCard } from '@/components/pet-card';
 import { RewardCelebration } from '@/components/reward-celebration';
 import { TodayChecklist } from '@/components/today-checklist';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,9 @@ export default function Home() {
     addKid,
     unlockWeekReward,
     toggleTaskCompletion,
+    assignNewPet,
+    namePet,
+    checkPetDeath,
   } = useKids();
   const weekDays = getWeekDays();
   const weekStartKey = getWeekStartKey();
@@ -206,8 +209,13 @@ export default function Home() {
           onClaim={handleClaim}
         />
 
-        {/* 3-min brush sticker shelf */}
-        <StickerShelf kid={activeKid} />
+        {/* Virtual pet */}
+        <PetCard
+          kid={activeKid}
+          onAssign={assignNewPet}
+          onName={namePet}
+          onCheckDeath={checkPetDeath}
+        />
 
         {/* Weekly reward sticker collection */}
         <StickerCollection rewards={activeKid.rewards} color={activeKid.color} />

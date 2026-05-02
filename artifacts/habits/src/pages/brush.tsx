@@ -13,7 +13,7 @@ import {
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useKidsContext as useKids } from '@/lib/kids-context';
-import { getCurrentSession, REWARD_STICKERS, type Session } from '@/lib/store';
+import { getCurrentSession, PET_CARE_ITEMS, PET_SPECIES_LIST, type Session } from '@/lib/store';
 import {
   getTeethForAge,
   DEFAULT_AGE,
@@ -112,11 +112,11 @@ export default function Brush() {
           );
           setSignedOff(true);
         }
-        // Award a collectible sticker for the 3-minute bonus brush
+        // Award a pet care item for the 3-minute bonus brush
         if (durationChoice === 3 && activeKid) {
           const kidStickers = activeKid.brushStickers ?? [];
-          const idx = kidStickers.length % REWARD_STICKERS.length;
-          const pick = REWARD_STICKERS[idx];
+          const idx = kidStickers.length % PET_CARE_ITEMS.length;
+          const pick = PET_CARE_ITEMS[idx];
           setStickerEarned({ emoji: pick.emoji, name: pick.name });
           awardBrushSticker(activeKid.id, format(new Date(), 'yyyy-MM-dd'));
         }
@@ -439,38 +439,60 @@ export default function Brush() {
                       : 'Sparkly clean ✨'}
                   </p>
 
-                  {/* Sticker reveal — only for 3-min brush */}
-                  {stickerEarned && (
-                    <motion.div
-                      key="sticker-reveal"
-                      initial={{ scale: 0, rotate: -20, opacity: 0 }}
-                      animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                      transition={{
-                        type: 'spring',
-                        stiffness: 260,
-                        damping: 14,
-                        delay: 0.45,
-                      }}
-                      className="mt-3 flex flex-col items-center gap-1"
-                    >
-                      <div
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-lg border-2"
-                        style={{
-                          backgroundColor: `${activeKid.color}22`,
-                          borderColor: activeKid.color,
-                        }}
+                  {/* Pet care item reveal — only for 3-min brush */}
+                  {stickerEarned && (() => {
+                    const petInfo = activeKid.pet
+                      ? PET_SPECIES_LIST.find(s => s.key === activeKid.pet!.species)
+                      : null;
+                    const petName = activeKid.pet?.name;
+                    const isEgg = activeKid.pet && !activeKid.pet.hatched;
+                    return (
+                      <motion.div
+                        key="sticker-reveal"
+                        initial={{ scale: 0, rotate: -20, opacity: 0 }}
+                        animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 0.45 }}
+                        className="mt-3 flex flex-col items-center gap-1"
                       >
-                        {stickerEarned.emoji}
-                      </div>
-                      <p
-                        className="text-[11px] font-extrabold uppercase tracking-wide"
-                        style={{ color: activeKid.color }}
-                      >
-                        +1 sticker!
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">{stickerEarned.name}</p>
-                    </motion.div>
-                  )}
+                        {/* Stacked: pet emoji + care item */}
+                        <div className="relative">
+                          <div
+                            className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-lg border-2"
+                            style={{
+                              backgroundColor: petInfo
+                                ? `${petInfo.color}28`
+                                : `${activeKid.color}22`,
+                              borderColor: petInfo?.color ?? activeKid.color,
+                            }}
+                          >
+                            {stickerEarned.emoji}
+                          </div>
+                          {petInfo && (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 0.7, type: 'spring', stiffness: 300 }}
+                              className="absolute -bottom-1 -right-1 text-lg"
+                            >
+                              {isEgg ? '🥚' : petInfo.emoji}
+                            </motion.span>
+                          )}
+                        </div>
+
+                        <p
+                          className="text-[11px] font-extrabold uppercase tracking-wide mt-1"
+                          style={{ color: petInfo?.color ?? activeKid.color }}
+                        >
+                          {isEgg
+                            ? '🥚 Your egg is hatching!'
+                            : petName
+                              ? `${petName} loved it!`
+                              : 'Pet care earned!'}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">{stickerEarned.name}</p>
+                      </motion.div>
+                    );
+                  })()}
                 </motion.div>
               ) : (
                 <motion.div

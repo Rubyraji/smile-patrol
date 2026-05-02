@@ -22,11 +22,63 @@ export type Task = {
   time: TaskTime;
 };
 
+export type CareCategory = 'food' | 'water' | 'activity';
+
 export type BrushSticker = {
-  date: string;   // 'yyyy-MM-dd'
-  sticker: string; // emoji
+  date: string;       // 'yyyy-MM-dd'
+  sticker: string;    // emoji
   name: string;
+  careCategory?: CareCategory;
 };
+
+// ── Virtual Pet ────────────────────────────────────────────────────────────
+
+export type PetSpecies = 'cat' | 'dog' | 'axolotl' | 'dino';
+
+export type Pet = {
+  species: PetSpecies;
+  name: string;
+  generation: number;           // 0 = first pet, increments on death
+  createdWeek: string;          // week-start 'yyyy-MM-dd' when assigned
+  hatched: boolean;             // false only while dino is still an egg
+  lastDeathCheckWeek: string;   // last week-start we ran the death check
+};
+
+export type PetSpeciesInfo = {
+  key: PetSpecies;
+  label: string;
+  emoji: string;
+  color: string;
+  defaultName: string;
+};
+
+export const PET_SPECIES_LIST: PetSpeciesInfo[] = [
+  { key: 'cat',     label: 'Cat',      emoji: '🐱', color: '#FF9F9F', defaultName: 'Whiskers' },
+  { key: 'dog',     label: 'Dog',      emoji: '🐶', color: '#FFCA3A', defaultName: 'Buddy'    },
+  { key: 'axolotl', label: 'Axolotl',  emoji: '🦎', color: '#FF85C2', defaultName: 'Axie'     },
+  { key: 'dino',    label: 'Dinosaur', emoji: '🦕', color: '#7BC67E', defaultName: 'Rex'      },
+];
+
+export type PetCareItem = {
+  emoji: string;
+  name: string;
+  category: CareCategory;
+};
+
+export const PET_CARE_ITEMS: PetCareItem[] = [
+  { emoji: '🍖', name: 'Yummy Bone',    category: 'food'     },
+  { emoji: '🐟', name: 'Fresh Fish',    category: 'food'     },
+  { emoji: '🥕', name: 'Carrot Crunch', category: 'food'     },
+  { emoji: '🍎', name: 'Apple Treat',   category: 'food'     },
+  { emoji: '🫐', name: 'Berry Snack',   category: 'food'     },
+  { emoji: '💧', name: 'Fresh Water',   category: 'water'    },
+  { emoji: '🌊', name: 'Splash Time',   category: 'water'    },
+  { emoji: '🛁', name: 'Spa Bath',      category: 'water'    },
+  { emoji: '🦮', name: 'Walkies!',      category: 'activity' },
+  { emoji: '⚽', name: 'Playtime!',     category: 'activity' },
+  { emoji: '🎾', name: 'Fetch!',        category: 'activity' },
+  { emoji: '🌿', name: 'Garden Run',    category: 'activity' },
+];
 
 export type Kid = {
   id: string;
@@ -40,6 +92,7 @@ export type Kid = {
   tasks: Task[];
   taskCompletions: Record<string, Record<string, boolean>>; // taskId -> dateStr -> done
   brushStickers: BrushSticker[]; // earned by completing a 3-minute brush
+  pet: Pet | null;               // virtual pet; null until first assigned
 };
 
 export const TASK_PRESETS: Array<{ name: string; emoji: string; time: TaskTime }> = [
@@ -222,6 +275,14 @@ function seedKids(): Kid[] {
         [flossId]: { [yesterday]: true },
       },
       brushStickers: [],
+      pet: {
+        species: 'cat',
+        name: 'Whiskers',
+        generation: 0,
+        createdWeek: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+        hatched: true,
+        lastDeathCheckWeek: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+      },
     },
     {
       id: nanoid(),
@@ -237,6 +298,14 @@ function seedKids(): Kid[] {
       tasks: [],
       taskCompletions: {},
       brushStickers: [],
+      pet: {
+        species: 'dino',
+        name: '',
+        generation: 0,
+        createdWeek: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+        hatched: false,
+        lastDeathCheckWeek: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+      },
     },
   ];
 }
@@ -261,6 +330,7 @@ function migrate(
     })),
     taskCompletions: kid.taskCompletions ?? {},
     brushStickers: kid.brushStickers ?? [],
+    pet: (kid.pet as Pet | undefined) ?? null,
   };
 }
 
@@ -347,6 +417,7 @@ export function useKids() {
           tasks: [],
           taskCompletions: {},
           brushStickers: [],
+          pet: null,
         };
         return [...prev, newKid];
       });
@@ -482,18 +553,113 @@ export function useKids() {
     setKids((prev) =>
       prev.map((k) => {
         if (k.id !== kidId) return k;
-        const idx = k.brushStickers.length % REWARD_STICKERS.length;
-        const pick = REWARD_STICKERS[idx];
+        const idx = k.brushStickers.length % PET_CARE_ITEMS.length;
+        const pick = PET_CARE_ITEMS[idx];
+        // Hatch the dino egg on the first 3-min brush
+        const pet =
+          k.pet && !k.pet.hatched && k.pet.species === 'dino'
+            ? { ...k.pet, hatched: true }
+            : k.pet;
         return {
           ...k,
+          pet,
           brushStickers: [
             ...k.brushStickers,
-            { date: dateStr, sticker: pick.emoji, name: pick.name },
+            { date: dateStr, sticker: pick.emoji, name: pick.name, careCategory: pick.category },
           ],
         };
       }),
     );
   }, []);
+
+  // ── Virtual pet management ─────────────────────────────────────────────
+
+  const assignNewPet = useCallback((kidId: string) => {
+    const now = new Date();
+    const weekStart = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const speciesIdx = Math.floor(Math.random() * PET_SPECIES_LIST.length);
+    const species = PET_SPECIES_LIST[speciesIdx];
+    const newPet: Pet = {
+      species: species.key,
+      name: '',
+      generation: 0,
+      createdWeek: weekStart,
+      hatched: species.key !== 'dino',
+      lastDeathCheckWeek: weekStart,
+    };
+    setKids((prev) =>
+      prev.map((k) => (k.id !== kidId ? k : { ...k, pet: newPet })),
+    );
+  }, []);
+
+  const namePet = useCallback((kidId: string, name: string) => {
+    setKids((prev) =>
+      prev.map((k) => {
+        if (k.id !== kidId || !k.pet) return k;
+        return { ...k, pet: { ...k.pet, name: name.trim() || k.pet.name || 'Buddy' } };
+      }),
+    );
+  }, []);
+
+  const checkPetDeath = useCallback(
+    (kidId: string): string | null => {
+      const kid = kids.find((k) => k.id === kidId);
+      if (!kid?.pet) return null;
+
+      const now = new Date();
+      const currentWeekStart = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+
+      // Already checked this week
+      if (kid.pet.lastDeathCheckWeek === currentWeekStart) return null;
+
+      // Pet created this week — just update check week, no death possible
+      if (kid.pet.createdWeek >= currentWeekStart) {
+        setKids((prev) =>
+          prev.map((k) =>
+            k.id !== kidId || !k.pet
+              ? k
+              : { ...k, pet: { ...k.pet, lastDeathCheckWeek: currentWeekStart } },
+          ),
+        );
+        return null;
+      }
+
+      // Check previous week (7 days back from current week start)
+      const prevWeekDays = getWeekDays(addDays(now, -7));
+      const prevWeekBrushCount = countWeekBrushings(kid, prevWeekDays);
+
+      if (prevWeekBrushCount >= 12) {
+        // Pet survives — update check week
+        setKids((prev) =>
+          prev.map((k) =>
+            k.id !== kidId || !k.pet
+              ? k
+              : { ...k, pet: { ...k.pet, lastDeathCheckWeek: currentWeekStart } },
+          ),
+        );
+        return null;
+      }
+
+      // Pet dies — replace with a new random species
+      const prevName = kid.pet.name || 'your pet';
+      const gen = kid.pet.generation + 1;
+      const speciesIdx = Math.floor(Math.random() * PET_SPECIES_LIST.length);
+      const species = PET_SPECIES_LIST[speciesIdx];
+      const newPet: Pet = {
+        species: species.key,
+        name: '',
+        generation: gen,
+        createdWeek: currentWeekStart,
+        hatched: species.key !== 'dino',
+        lastDeathCheckWeek: currentWeekStart,
+      };
+      setKids((prev) =>
+        prev.map((k) => (k.id !== kidId ? k : { ...k, pet: newPet })),
+      );
+      return prevName;
+    },
+    [kids],
+  );
 
   const unlockWeekReward = useCallback(
     (kidId: string, weekStartKey: string): Reward | null => {
@@ -544,6 +710,9 @@ export function useKids() {
     toggleTaskCompletion,
     setKidsFromRemote,
     awardBrushSticker,
+    assignNewPet,
+    namePet,
+    checkPetDeath,
     parentPin: parentSettings.parentPin,
     requireParentSignoff: parentSettings.requireParentSignoff,
     setParentPin,
@@ -574,6 +743,16 @@ export function countWeekBrushings(kid: Kid, weekDays: Date[]): number {
 
 export function getWeekStartKey(date: Date = new Date()): string {
   return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+}
+
+/**
+ * Returns a 0–5 heart count for the kid's virtual pet based on brushing
+ * compliance in the given week. Loses 1 heart per missed session (max 5).
+ */
+export function getPetHappiness(kid: Kid, weekDays: Date[]): number {
+  const brushCount = countWeekBrushings(kid, weekDays);
+  const missedSessions = Math.max(0, 14 - brushCount);
+  return Math.max(0, 5 - missedSessions);
 }
 
 export function getWeekReward(kid: Kid, weekStartKey: string): Reward | undefined {
