@@ -32,6 +32,12 @@ type Props = {
    * In `verify` mode this is the same string as `expectedPin`.
    */
   onSuccess: (pin: string) => void;
+  /**
+   * When provided and mode is `verify`, a "Forgot PIN?" link is shown.
+   * The component closes itself before calling this so the caller can open
+   * a recovery dialog.
+   */
+  onForgotPin?: () => void;
   title?: string;
   subtitle?: string;
   accentColor?: string;
@@ -49,6 +55,7 @@ export function ParentPinPad({
   mode,
   expectedPin,
   onSuccess,
+  onForgotPin,
   title,
   subtitle,
   accentColor = 'hsl(var(--primary))',
@@ -264,6 +271,20 @@ export function ParentPinPad({
             );
           })}
         </div>
+
+        {mode === 'verify' && onForgotPin && (
+          <button
+            type="button"
+            onClick={() => {
+              onOpenChange(false);
+              onForgotPin();
+            }}
+            className="mt-4 w-full text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition"
+            data-testid="pin-forgot-link"
+          >
+            Forgot PIN?
+          </button>
+        )}
       </DialogContent>
     </Dialog>
   );

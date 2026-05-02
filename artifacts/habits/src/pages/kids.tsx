@@ -61,8 +61,10 @@ export default function Kids() {
     title?: string;
     subtitle?: string;
     onSuccess: (pin: string) => void;
+    onForgotPin?: () => void;
   } | null>(null);
   const [pendingPinRemoval, setPendingPinRemoval] = useState(false);
+  const [forgotPinOpen, setForgotPinOpen] = useState(false);
 
   const editing = editingId ? kids.find((k) => k.id === editingId) ?? null : null;
 
@@ -107,6 +109,7 @@ export default function Kids() {
       title: 'Confirm to remove PIN',
       subtitle: 'Enter your current PIN to remove it.',
       onSuccess: () => setParentPin(null),
+      onForgotPin: () => setForgotPinOpen(true),
     });
   };
 
@@ -304,12 +307,37 @@ export default function Kids() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={forgotPinOpen} onOpenChange={setForgotPinOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset parent PIN?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your PIN will be cleared and sign-off will be turned off. You
+              can set a new PIN here any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setParentPin(null);
+                setPinPad(null);
+              }}
+              data-testid="confirm-forgot-pin-kids"
+            >
+              Reset PIN
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <ParentPinPad
         open={!!pinPad}
         onOpenChange={(o) => !o && setPinPad(null)}
         mode={pinPad?.mode ?? 'verify'}
         expectedPin={parentPin}
         onSuccess={(pin) => pinPad?.onSuccess(pin)}
+        onForgotPin={pinPad?.onForgotPin}
         title={pinPad?.title}
         subtitle={pinPad?.subtitle}
       />

@@ -23,6 +23,16 @@ import { BrushDial } from '@/components/brush-dial';
 import { DentalArches } from '@/components/dental-arches';
 import { ParentPinPad } from '@/components/parent-pin-pad';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
 const DURATION_MS = 120_000; // 2 minutes
@@ -57,6 +67,7 @@ export default function Brush() {
     setSession: persistSession,
     parentPin,
     requireParentSignoff,
+    setParentPin,
   } = useKids();
   const [session, setSession] = useState<Session>(getCurrentSession());
   const [running, setRunning] = useState(false);
@@ -67,6 +78,7 @@ export default function Brush() {
   // once this flips true.
   const [signedOff, setSignedOff] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
+  const [forgotPinOpen, setForgotPinOpen] = useState(false);
 
   const signoffRequired = requireParentSignoff && !!parentPin;
 
@@ -135,6 +147,21 @@ export default function Brush() {
         true,
       );
     }
+    setSignedOff(true);
+  };
+
+  const handleForgotPin = () => {
+    // Persist the session (sign-off is being waived), then clear the PIN
+    // so the family can set a new one via Kids > Parent sign-off.
+    if (activeKid) {
+      persistSession(
+        activeKid.id,
+        format(new Date(), 'yyyy-MM-dd'),
+        session,
+        true,
+      );
+    }
+    setParentPin(null); // also clears requireParentSignoff in store
     setSignedOff(true);
   };
 
@@ -482,10 +509,33 @@ export default function Brush() {
         mode="verify"
         expectedPin={parentPin}
         onSuccess={handlePinSuccess}
+        onForgotPin={() => setForgotPinOpen(true)}
         accentColor={activeKid.color}
         title="Parent sign-off"
         subtitle={`Enter your PIN to confirm ${activeKid.name}'s brush.`}
       />
+
+      <AlertDialog open={forgotPinOpen} onOpenChange={setForgotPinOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset parent PIN?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your PIN will be cleared and sign-off will be turned off.
+              This brush will be saved as normal. You can set a new PIN any
+              time in Kids settings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleForgotPin}
+              data-testid="confirm-forgot-pin-brush"
+            >
+              Reset PIN &amp; save brush
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
