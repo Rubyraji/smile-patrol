@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -58,7 +58,7 @@
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
   --font-sans: var(--app-font-sans);
-  --font-serif: var(--app-font-serif);
+  --font-serif: var(--app-font-sans); /* single font everywhere */
   --font-mono: var(--app-font-mono);
 
   --radius-sm: calc(var(--radius) - 4px);
@@ -67,69 +67,73 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* LIGHT MODE: Soft sky/mint, Teal accent */
+/* ── LIGHT MODE — warm cream + vivid violet ────────────────────────────── */
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
+  --button-outline: rgba(0,0,0, .08);
+  --badge-outline: rgba(0,0,0, .04);
   --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --elevate-1: rgba(0,0,0, .025);
+  --elevate-2: rgba(0,0,0, .06);
 
-  --background: 200 60% 97%;
-  --foreground: 215 30% 18%;
+  /* Warm cream background */
+  --background: 42 55% 97%;
+  --foreground: 245 22% 16%;
 
   --card: 0 0% 100%;
-  --card-foreground: 215 30% 18%;
-  --card-border: 200 30% 92%;
+  --card-foreground: 245 22% 16%;
+  --card-border: 38 30% 90%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 215 30% 18%;
-  --popover-border: 200 30% 92%;
+  --popover-foreground: 245 22% 16%;
+  --popover-border: 38 30% 90%;
 
-  --primary: 175 70% 41%;
+  /* Vivid violet — bright, happy, gender-neutral */
+  --primary: 252 85% 60%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 200 50% 92%;
-  --secondary-foreground: 215 30% 18%;
+  --secondary: 252 60% 94%;
+  --secondary-foreground: 245 22% 16%;
 
-  --muted: 200 40% 94%;
-  --muted-foreground: 215 15% 45%;
+  --muted: 42 20% 93%;
+  --muted-foreground: 240 10% 46%;
 
-  --accent: 175 70% 41%;
+  /* Warm golden accent */
+  --accent: 35 95% 55%;
   --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 70% 60%;
+  --destructive: 0 72% 58%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 200 30% 88%;
-  --input: 200 30% 88%;
-  --ring: 175 70% 41%;
+  --border: 38 28% 87%;
+  --input: 38 28% 87%;
+  --ring: 252 85% 60%;
 
-  --sidebar: 200 60% 97%;
-  --sidebar-foreground: 215 30% 18%;
-  --sidebar-border: 200 30% 88%;
-  --sidebar-primary: 175 70% 41%;
+  --sidebar: 42 55% 97%;
+  --sidebar-foreground: 245 22% 16%;
+  --sidebar-border: 38 28% 87%;
+  --sidebar-primary: 252 85% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 200 40% 94%;
-  --sidebar-accent-foreground: 215 30% 18%;
-  --sidebar-ring: 175 70% 41%;
+  --sidebar-accent: 42 20% 93%;
+  --sidebar-accent-foreground: 245 22% 16%;
+  --sidebar-ring: 252 85% 60%;
 
-  --chart-1: 175 70% 41%;
-  --chart-2: 200 80% 60%;
-  --chart-3: 280 60% 65%;
-  --chart-4: 35 90% 60%;
-  --chart-5: 340 70% 65%;
+  --chart-1: 252 85% 60%;
+  --chart-2: 35 95% 55%;
+  --chart-3: 330 80% 60%;
+  --chart-4: 170 70% 42%;
+  --chart-5: 200 80% 55%;
 
-  --app-font-sans: 'Inter', sans-serif;
-  --app-font-serif: 'Fraunces', serif;
-  --app-font-mono: Menlo, monospace;
-  --radius: .75rem;
-  
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.03);
-  --shadow: 0 2px 4px rgba(0,0,0,0.03);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.03);
+  /* Nunito for everything — round letterforms kids love */
+  --app-font-sans: 'Nunito', sans-serif;
+  --app-font-mono: 'Menlo', monospace;
+  --radius: 1.05rem;
+
+  --shadow-sm: 0 1px 3px rgba(80,60,120,0.07);
+  --shadow:    0 2px 8px rgba(80,60,120,0.09);
+  --shadow-md: 0 4px 16px rgba(80,60,120,0.10);
 }
 
+/* ── DARK MODE — warm charcoal + lilac ────────────────────────────────── */
 .dark {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
@@ -137,51 +141,50 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* DARK MODE: Warm charcoal #1C1B1A, Sage Green accent */
-  --background: 30 4% 11%;
-  --foreground: 38 20% 90%;
+  --background: 248 18% 11%;
+  --foreground: 250 20% 90%;
 
-  --card: 30 4% 14%;
-  --card-foreground: 38 20% 90%;
-  --card-border: 30 4% 18%;
+  --card: 248 16% 14%;
+  --card-foreground: 250 20% 90%;
+  --card-border: 248 14% 20%;
 
-  --popover: 30 4% 14%;
-  --popover-foreground: 38 20% 90%;
-  --popover-border: 30 4% 18%;
+  --popover: 248 16% 14%;
+  --popover-foreground: 250 20% 90%;
+  --popover-border: 248 14% 20%;
 
-  --primary: 120 15% 55%;
-  --primary-foreground: 0 0% 10%;
+  --primary: 255 80% 70%;
+  --primary-foreground: 245 22% 12%;
 
-  --secondary: 30 4% 20%;
-  --secondary-foreground: 38 20% 90%;
+  --secondary: 248 20% 22%;
+  --secondary-foreground: 250 20% 90%;
 
-  --muted: 30 4% 16%;
-  --muted-foreground: 30 5% 65%;
+  --muted: 248 16% 17%;
+  --muted-foreground: 248 12% 60%;
 
-  --accent: 120 15% 55%;
-  --accent-foreground: 0 0% 10%;
+  --accent: 35 90% 60%;
+  --accent-foreground: 245 22% 12%;
 
-  --destructive: 0 40% 45%;
+  --destructive: 0 55% 52%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 30 4% 20%;
-  --input: 30 4% 20%;
-  --ring: 120 15% 55%;
+  --border: 248 14% 22%;
+  --input: 248 14% 22%;
+  --ring: 255 80% 70%;
 
-  --sidebar: 30 4% 11%;
-  --sidebar-foreground: 38 20% 90%;
-  --sidebar-border: 30 4% 20%;
-  --sidebar-primary: 120 15% 55%;
-  --sidebar-primary-foreground: 0 0% 10%;
-  --sidebar-accent: 30 4% 16%;
-  --sidebar-accent-foreground: 38 20% 90%;
-  --sidebar-ring: 120 15% 55%;
+  --sidebar: 248 18% 11%;
+  --sidebar-foreground: 250 20% 90%;
+  --sidebar-border: 248 14% 22%;
+  --sidebar-primary: 255 80% 70%;
+  --sidebar-primary-foreground: 245 22% 12%;
+  --sidebar-accent: 248 16% 17%;
+  --sidebar-accent-foreground: 250 20% 90%;
+  --sidebar-ring: 255 80% 70%;
 
-  --chart-1: 120 15% 55%;
-  --chart-2: 120 15% 70%;
-  --chart-3: 120 15% 40%;
-  --chart-4: 120 15% 30%;
-  --chart-5: 120 15% 85%;
+  --chart-1: 255 80% 70%;
+  --chart-2: 35 90% 60%;
+  --chart-3: 330 70% 65%;
+  --chart-4: 170 60% 52%;
+  --chart-5: 200 70% 60%;
 }
 
 @layer base {
@@ -192,9 +195,11 @@
   body {
     @apply font-sans antialiased bg-background text-foreground selection:bg-primary/20;
   }
-  
+
+  /* All headings use Nunito too — bold & friendly */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight text-foreground;
+    font-family: 'Nunito', sans-serif;
+    @apply font-extrabold tracking-tight text-foreground;
   }
 }
 
@@ -207,7 +212,7 @@
     color: hsl(var(--muted-foreground));
     pointer-events: none;
   }
-  
+
   /* Remove scrollbars but keep functionality */
   .no-scrollbar::-webkit-scrollbar {
     display: none;

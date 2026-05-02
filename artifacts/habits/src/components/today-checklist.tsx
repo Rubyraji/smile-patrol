@@ -64,13 +64,16 @@ export function TodayChecklist({ kid, onToggleTask }: Props) {
   return (
     <section>
       <div className="flex items-center justify-between mb-3 px-1">
-        <h3 className="text-xl font-bold flex items-center gap-1.5">
-          <span>📋</span>
+        <h3 className="text-2xl font-black flex items-center gap-2">
+          <span className="text-2xl">⭐</span>
           <span>Today</span>
         </h3>
         <span
-          className="text-sm font-bold"
-          style={{ color: allDone ? kid.color : undefined }}
+          className="text-sm font-extrabold px-3 py-1 rounded-full"
+          style={{
+            backgroundColor: allDone ? `${kid.color}22` : 'hsl(var(--muted))',
+            color: allDone ? kid.color : 'hsl(var(--muted-foreground))',
+          }}
           data-testid="today-progress"
         >
           {doneCount} / {goals.length} done

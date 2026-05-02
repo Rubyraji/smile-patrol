@@ -97,13 +97,13 @@ export default function Home() {
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {format(new Date(), 'EEEE, MMM d')}
-              </p>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <span>🪥</span>
+              <h1 className="text-4xl font-black flex items-center gap-2.5 leading-none mb-0.5">
+                <span>🦷</span>
                 <span>Brush Buddies</span>
               </h1>
+              <p className="text-sm font-semibold text-muted-foreground pl-1">
+                {format(new Date(), 'EEEE, MMM d')}
+              </p>
             </div>
           </div>
           <KidSwitcher kids={kids} activeId={activeId} onSelect={setActiveId} />

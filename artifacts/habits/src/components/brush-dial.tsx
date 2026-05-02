@@ -15,7 +15,7 @@ export function BrushDial({
   size = 300,
   strokeWidth = 22,
   color,
-  trackColor = 'hsl(var(--muted))',
+  trackColor = 'hsl(var(--primary) / 0.10)',
   children,
   pulse = false,
 }: Props) {
