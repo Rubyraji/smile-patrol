@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Home as HomeIcon, Timer, Users, Settings } from 'lucide-react';
+import { Home as HomeIcon, Timer, Users, Settings, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const items = [
@@ -7,28 +7,30 @@ const items = [
     href: '/',
     label: 'Home',
     icon: HomeIcon,
-    emoji: '🏠',
     match: (p: string) => p === '/',
   },
   {
     href: '/brush',
     label: 'Brush',
     icon: Timer,
-    emoji: '🦷',
     match: (p: string) => p === '/brush',
+  },
+  {
+    href: '/family',
+    label: 'Family',
+    icon: LayoutDashboard,
+    match: (p: string) => p === '/family',
   },
   {
     href: '/kids',
     label: 'Kids',
     icon: Users,
-    emoji: '👦',
     match: (p: string) => p === '/kids',
   },
   {
     href: '/settings',
     label: 'Settings',
     icon: Settings,
-    emoji: '⚙️',
     match: (p: string) => p === '/settings',
   },
 ];
