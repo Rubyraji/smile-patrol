@@ -64,9 +64,16 @@ export function DentalArches({
   const ry = size * 0.3;
 
   const renderArch = (arch: ToothArch, archTeeth: Tooth[], centerY: number) => {
-    const total = archTeeth.length;
+    // Non-interactive display (brush timer): only layout teeth that are
+    // actually present so absent slots don't create gaps in the arch.
+    // Interactive mode (kid editor): keep all positions so every slot is
+    // tappable even when the tooth hasn't erupted yet.
+    const layoutTeeth = interactive
+      ? archTeeth
+      : archTeeth.filter((t) => t.presence !== 'absent');
+    const total = layoutTeeth.length;
 
-    return archTeeth.map((tooth, i) => {
+    return layoutTeeth.map((tooth, i) => {
       const t = total === 1 ? 0.5 : i / (total - 1);
       const angleDeg = 14 + 152 * t; // 14°..166°
       const angle = (angleDeg * Math.PI) / 180;
