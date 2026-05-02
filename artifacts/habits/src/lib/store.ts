@@ -608,3 +608,39 @@ export function getStreak(kid: Kid): number {
   }
   return streak;
 }
+
+/**
+ * Number of consecutive days on which EVERY kid completed both brushes and
+ * all their configured tasks.  Today is skipped when it isn't finished yet
+ * so the streak doesn't reset mid-day.
+ */
+export function getFamilyStreak(kids: Kid[]): number {
+  if (kids.length === 0) return 0;
+
+  const isDayComplete = (dateStr: string): boolean =>
+    kids.every((kid) => {
+      const rec = kid.brushings[dateStr];
+      if (!rec?.morning || !rec?.afternoon) return false;
+      return kid.tasks.every((t) => !!kid.taskCompletions[t.id]?.[dateStr]);
+    });
+
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  // If today isn't done yet, start counting from yesterday so the streak
+  // stays intact while the family works through today's goals.
+  const startCursor = isDayComplete(todayStr)
+    ? new Date()
+    : addDays(new Date(), -1);
+
+  let streak = 0;
+  let cursor = startCursor;
+  for (let i = 0; i < 365; i++) {
+    const key = format(cursor, 'yyyy-MM-dd');
+    if (isDayComplete(key)) {
+      streak++;
+      cursor = addDays(cursor, -1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}

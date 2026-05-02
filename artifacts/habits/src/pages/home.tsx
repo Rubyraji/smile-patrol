@@ -6,6 +6,7 @@ import {
   useKids,
   getWeekDays,
   getStreak,
+  getFamilyStreak,
   getWeekStartKey,
   getWeekReward,
   isWeekComplete,
@@ -76,6 +77,7 @@ export default function Home() {
 
   const progress = getWeekProgress(activeKid, weekDays);
   const streak = getStreak(activeKid);
+  const familyStreak = getFamilyStreak(kids);
 
   const currentWeekReward = getWeekReward(activeKid, weekStartKey);
   const weekDone = isWeekComplete(activeKid, weekDays);
@@ -146,6 +148,45 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Family streak — shown when there are 2+ kids */}
+        {kids.length >= 2 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="flex items-center gap-3 rounded-2xl bg-card border px-4 py-3"
+            data-testid="family-streak-banner"
+          >
+            <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center shrink-0">
+              <Flame className="h-5 w-5 text-orange-500 fill-orange-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-muted-foreground leading-none mb-0.5">
+                Family streak
+              </p>
+              <p className="text-sm font-bold leading-none">
+                {familyStreak === 0 ? (
+                  <span className="text-muted-foreground font-medium">
+                    Complete everyone's goals today to start one!
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-orange-500 text-base">{familyStreak}</span>
+                    <span className="text-muted-foreground font-medium ml-1">
+                      {familyStreak === 1 ? 'day — keep it up!' : 'days in a row — amazing!'}
+                    </span>
+                  </>
+                )}
+              </p>
+            </div>
+            {familyStreak >= 3 && (
+              <span className="text-xl shrink-0" aria-hidden>
+                {familyStreak >= 14 ? '🏆' : familyStreak >= 7 ? '🌟' : '🔥'}
+              </span>
+            )}
+          </motion.div>
+        )}
 
         {/* TODAY — primary kid surface */}
         <TodayChecklist
