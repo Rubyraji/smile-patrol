@@ -103,7 +103,7 @@ export default function Home() {
             <div>
               <h1 className="text-4xl font-black flex items-center gap-2.5 leading-none mb-0.5">
                 <span>🦷</span>
-                <span>Brush Buddies</span>
+                <span>Toothbrush Hero</span>
               </h1>
               <p className="text-sm font-semibold text-muted-foreground pl-1">
                 {format(new Date(), 'EEEE, MMM d')}

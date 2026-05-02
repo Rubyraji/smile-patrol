@@ -72,7 +72,7 @@ function useScheduler(settings: NotificationSettings) {
 
       if (cur === settings.morningTime && lastFired.morning !== today) {
         lastFired.morning = today;
-        new Notification('🪥 Brush Buddies', {
+        new Notification('🪥 Toothbrush Hero', {
           body: "Time for morning brushing! 🌞",
           icon: '/favicon.ico',
           tag: `brush-morning-${today}`,
@@ -80,7 +80,7 @@ function useScheduler(settings: NotificationSettings) {
       }
       if (cur === settings.eveningTime && lastFired.evening !== today) {
         lastFired.evening = today;
-        new Notification('🪥 Brush Buddies', {
+        new Notification('🪥 Toothbrush Hero', {
           body: "Bedtime brush time! 🌙",
           icon: '/favicon.ico',
           tag: `brush-evening-${today}`,

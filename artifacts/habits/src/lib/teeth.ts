@@ -2,7 +2,7 @@
 // dental arches in the brushing timer and the kid editor.
 //
 // Eruption ages are simplified averages drawn from common pediatric charts.
-// They are deliberately rounded — Brush Buddies is a brushing tracker, not a
+// They are deliberately rounded — Toothbrush Hero is a brushing tracker, not a
 // clinical tool. Parents can override individual teeth via `missingTeeth`.
 
 export type ToothPosition = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
