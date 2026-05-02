@@ -23,6 +23,7 @@ import {
 import { BrushDial } from '@/components/brush-dial';
 import { DentalArches } from '@/components/dental-arches';
 import { ParentPinPad } from '@/components/parent-pin-pad';
+import { EggHatchAnimation } from '@/components/egg-hatch-animation';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -77,9 +78,14 @@ export default function Brush() {
   const [pinOpen, setPinOpen] = useState(false);
   const [forgotPinOpen, setForgotPinOpen] = useState(false);
 
-  // null = not chosen yet; 2 = 2-minute; 3 = 3-minute (earns a sticker)
+  // null = not chosen yet; 2 = 2-minute; 3 = 3-minute (earns a pet care item)
   const [durationChoice, setDurationChoice] = useState<2 | 3 | null>(null);
   const [stickerEarned, setStickerEarned] = useState<{ emoji: string; name: string } | null>(null);
+  const [showHatch, setShowHatch] = useState(false);
+  // Capture egg state before the brush completes so we can trigger the animation
+  const wasEggRef = useRef(
+    activeKid?.pet != null && !activeKid.pet.hatched,
+  );
 
   const signoffRequired = requireParentSignoff && !!parentPin;
 
@@ -119,6 +125,8 @@ export default function Brush() {
           const pick = PET_CARE_ITEMS[idx];
           setStickerEarned({ emoji: pick.emoji, name: pick.name });
           awardBrushSticker(activeKid.id, format(new Date(), 'yyyy-MM-dd'));
+          // If the pet was an egg, trigger the hatch animation
+          if (wasEggRef.current) setShowHatch(true);
         }
         return;
       }
@@ -643,6 +651,21 @@ export default function Brush() {
         title="Parent sign-off"
         subtitle={`Enter your PIN to confirm ${activeKid.name}'s brush.`}
       />
+
+      {/* Egg hatch animation overlay */}
+      <AnimatePresence>
+        {showHatch && activeKid?.pet && (() => {
+          const info = PET_SPECIES_LIST.find(s => s.key === activeKid.pet!.species);
+          if (!info) return null;
+          return (
+            <EggHatchAnimation
+              petInfo={info}
+              petName={activeKid.pet!.name || info.defaultName}
+              onComplete={() => setShowHatch(false)}
+            />
+          );
+        })()}
+      </AnimatePresence>
 
       <AlertDialog open={forgotPinOpen} onOpenChange={setForgotPinOpen}>
         <AlertDialogContent>
