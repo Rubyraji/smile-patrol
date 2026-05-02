@@ -99,7 +99,7 @@ export type Kid = {
 
 export const TASK_PRESETS: Array<{ name: string; emoji: string; time: TaskTime }> = [
   { name: 'Floss', emoji: '🧵', time: 'anytime' },
-  { name: 'Tooth cream', emoji: '🪥', time: 'night' },
+  { name: 'Tooth cream', emoji: '🪥', time: 'anytime' },
   { name: 'Mouthwash', emoji: '💧', time: 'anytime' },
   { name: 'Tongue scrape', emoji: '👅', time: 'anytime' },
   { name: 'Replace brush head', emoji: '🔄', time: 'anytime' },
@@ -127,9 +127,9 @@ export const QUICK_TOGGLE_PRESETS: Array<{
     key: 'tooth-cream',
     name: 'Tooth cream',
     emoji: '🪥',
-    time: 'night',
-    title: 'Track tooth cream (night)',
-    subtitle: 'Adds a bedtime tooth cream reminder after the evening brush.',
+    time: 'anytime',
+    title: 'Track tooth cream',
+    subtitle: 'Adds a daily tooth cream step right after flossing.',
   },
 ];
 

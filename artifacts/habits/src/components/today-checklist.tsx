@@ -25,7 +25,19 @@ export function TodayChecklist({ kid, onToggleTask }: Props) {
   const brushings = kid.brushings[today] ?? {};
   const taskComps = kid.taskCompletions[today] ?? {};
 
-  const anytimeTasks = kid.tasks.filter((t) => t.time !== 'night');
+  // Keep quick-toggle presets (Floss → Tooth cream) in their defined order,
+  // then append any custom anytime tasks in the order they were added.
+  const ANYTIME_ORDER = ['Floss', 'Tooth cream'];
+  const anytimeTasks = kid.tasks
+    .filter((t) => t.time !== 'night')
+    .sort((a, b) => {
+      const ai = ANYTIME_ORDER.indexOf(a.name);
+      const bi = ANYTIME_ORDER.indexOf(b.name);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
   const nightTasks = kid.tasks.filter((t) => t.time === 'night');
 
   const taskToGoal = (t: (typeof kid.tasks)[number], hint: string): Goal => ({
