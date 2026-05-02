@@ -4,6 +4,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeProvider } from '@/components/theme-provider';
 import { NotificationProvider } from '@/lib/notifications';
+import { FamilySyncProvider } from '@/lib/family-sync';
+import { KidsProvider } from '@/lib/kids-context';
 import NotFound from '@/pages/not-found';
 
 import Home from '@/pages/home';
@@ -37,7 +39,11 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-              <Router />
+              <FamilySyncProvider>
+                <KidsProvider>
+                  <Router />
+                </KidsProvider>
+              </FamilySyncProvider>
             </WouterRouter>
             <Toaster />
           </TooltipProvider>

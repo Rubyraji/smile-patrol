@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useKids, getCurrentSession, type Session } from '@/lib/store';
+import { useKidsContext as useKids } from '@/lib/kids-context';
+import { getCurrentSession, type Session } from '@/lib/store';
 import {
   getTeethForAge,
   DEFAULT_AGE,

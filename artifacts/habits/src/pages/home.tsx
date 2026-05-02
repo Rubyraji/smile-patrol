@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Flame } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
+import { useKidsContext as useKids } from '@/lib/kids-context';
 import {
-  useKids,
   getWeekDays,
   getStreak,
   getFamilyStreak,

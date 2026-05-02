@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowLeft, Trash2, Plus, X, Check, RotateCcw, Lock } from 'lucide-react';
 import { ParentPinPad, type PinPadMode } from '@/components/parent-pin-pad';
+import { useKidsContext as useKids } from '@/lib/kids-context';
 import {
-  useKids,
   KID_EMOJIS,
   KID_COLORS,
   CHARACTER_CATEGORIES,

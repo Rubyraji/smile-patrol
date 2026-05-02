@@ -491,6 +491,10 @@ export function useKids() {
     []
   );
 
+  const setKidsFromRemote = useCallback((updater: (prev: Kid[]) => Kid[]) => {
+    setKids(updater);
+  }, []);
+
   const activeKid = kids.find((k) => k.id === activeId) ?? null;
 
   return {
@@ -510,6 +514,7 @@ export function useKids() {
     updateTask,
     removeTask,
     toggleTaskCompletion,
+    setKidsFromRemote,
     parentPin: parentSettings.parentPin,
     requireParentSignoff: parentSettings.requireParentSignoff,
     setParentPin,
