@@ -25,10 +25,10 @@ type Props = {
 type ToothDims = { ow: number; iw: number; h: number; r: number };
 
 const TOOTH_DIMS: Record<ToothShape, ToothDims> = {
-  incisor:  { ow: 15, iw: 10, h: 22, r: 3   },
-  canine:   { ow: 15, iw:  7, h: 26, r: 3.5 },
-  premolar: { ow: 18, iw: 15, h: 22, r: 5   },
-  molar:    { ow: 23, iw: 19, h: 25, r: 5   },
+  incisor:  { ow: 13, iw:  9, h: 21, r: 5.5 },
+  canine:   { ow: 13, iw:  6, h: 25, r: 5.5 },
+  premolar: { ow: 16, iw: 13, h: 21, r: 6.5 },
+  molar:    { ow: 20, iw: 17, h: 24, r: 7.5 },
 };
 
 // Scale down primary teeth — they are smaller and more rounded.
@@ -95,8 +95,20 @@ export function DentalArches({
       : archTeeth.filter((t) => t.presence !== 'absent');
     const total = layoutTeeth.length;
 
+    // Width-proportional angular spacing: wider teeth (molars) get more arc room
+    // so they never crowd into their neighbours.
+    const toothOW = layoutTeeth.map((t) => {
+      const base = TOOTH_DIMS[t.shape];
+      const s = t.presence === 'primary' ? PRIMARY_SCALE : 1;
+      return base.ow * s;
+    });
+    const totalOW = toothOW.reduce((a, b) => a + b, 0);
+
+    let cumOW = 0;
     return layoutTeeth.map((tooth, i) => {
-      const t = total === 1 ? 0.5 : i / (total - 1);
+      const w = toothOW[i];
+      const t = total === 1 ? 0.5 : (cumOW + w / 2) / totalOW;
+      cumOW += w;
       const angleDeg = 14 + 152 * t;
       const angle = (angleDeg * Math.PI) / 180;
       const x = cx - rx * Math.cos(angle);
