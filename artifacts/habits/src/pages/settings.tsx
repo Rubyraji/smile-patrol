@@ -474,6 +474,15 @@ export default function Settings() {
             Reminders fire while this tab is open. For reliable notifications, keep the app pinned or add it to your home screen.
           </p>
         </section>
+
+        <footer className="pt-2 pb-4 text-center">
+          <p className="text-[11px] text-muted-foreground/60 font-medium">
+            © {new Date().getFullYear()} Radhika Arasu. All rights reserved.
+          </p>
+          <p className="text-[10px] text-muted-foreground/40 mt-0.5">
+            Toothbrush Hero
+          </p>
+        </footer>
       </main>
     </div>
   );
