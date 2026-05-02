@@ -13,12 +13,7 @@ import { cn } from '@/lib/utils';
 
 type Props = {
   teeth: Tooth[];
-  /**
-   * Map of tooth id → set of surfaces that have been brushed. When omitted,
-   * all teeth render in their unbrushed state.
-   */
   brushedSurfaces?: BrushedMap;
-  /** Color used to fill brushed surfaces (typically the kid's color). */
   brushColor?: string;
   size?: number;
   onToothClick?: (id: ToothId) => void;
@@ -26,20 +21,51 @@ type Props = {
   className?: string;
 };
 
-const TOOTH_DIMS: Record<ToothShape, { w: number; h: number; r: number }> = {
-  incisor: { w: 14, h: 22, r: 5 },
-  canine: { w: 15, h: 24, r: 6 },
-  premolar: { w: 18, h: 22, r: 7 },
-  molar: { w: 22, h: 24, r: 7 },
+// Outer width (labial/buccal side), inner width (lingual/palatal side), height, corner-radius
+type ToothDims = { ow: number; iw: number; h: number; r: number };
+
+const TOOTH_DIMS: Record<ToothShape, ToothDims> = {
+  incisor:  { ow: 15, iw: 10, h: 22, r: 3   },
+  canine:   { ow: 15, iw:  7, h: 26, r: 3.5 },
+  premolar: { ow: 18, iw: 15, h: 22, r: 5   },
+  molar:    { ow: 23, iw: 19, h: 25, r: 5   },
 };
 
-// Band proportions of tooth height: outer / biting / inner.
+// Scale down primary teeth — they are smaller and more rounded.
+const PRIMARY_SCALE = 0.82;
+
+// Band proportions (outer : biting : inner) of the tooth height.
 const BAND_RATIOS: Record<ToothShape, [number, number, number]> = {
-  incisor: [0.36, 0.28, 0.36],
-  canine: [0.36, 0.28, 0.36],
-  premolar: [0.3, 0.4, 0.3],
-  molar: [0.27, 0.46, 0.27],
+  incisor:  [0.30, 0.40, 0.30],
+  canine:   [0.30, 0.40, 0.30],
+  premolar: [0.26, 0.48, 0.26],
+  molar:    [0.24, 0.52, 0.24],
 };
+
+// Build a trapezoidal outline path (occlusal view).
+// ow = outer (labial/buccal) width  — rendered at y = -h/2
+// iw = inner (lingual/palatal) width — rendered at y = +h/2
+function toothPath(ow: number, iw: number, h: number, r: number): string {
+  const t = -h / 2;
+  const b = h / 2;
+  const lt = -ow / 2, rt = ow / 2;
+  const lb = -iw / 2, rb = iw / 2;
+  // Clamp corner radius so it doesn't exceed half the narrowest width
+  const rT = Math.min(r, ow / 2 - 0.5);
+  const rB = Math.min(r, iw / 2 - 0.5);
+  return [
+    `M ${lt + rT} ${t}`,
+    `L ${rt - rT} ${t}`,
+    `Q ${rt} ${t} ${rt} ${t + rT}`,
+    `L ${rb} ${b - rB}`,
+    `Q ${rb} ${b} ${rb - rB} ${b}`,
+    `L ${lb + rB} ${b}`,
+    `Q ${lb} ${b} ${lb} ${b - rB}`,
+    `L ${lt} ${t + rT}`,
+    `Q ${lt} ${t} ${lt + rT} ${t}`,
+    `Z`,
+  ].join(' ');
+}
 
 const EMPTY_BRUSHED = new Set<ToothSurface>();
 
@@ -60,14 +86,10 @@ export function DentalArches({
   const archGap = size * 0.1;
   const upperCenterY = size / 2 - archGap / 2;
   const lowerCenterY = size / 2 + archGap / 2;
-  const rx = size * 0.42;
-  const ry = size * 0.3;
+  const rx = size * 0.43;
+  const ry = size * 0.29;
 
   const renderArch = (arch: ToothArch, archTeeth: Tooth[], centerY: number) => {
-    // Non-interactive display (brush timer): only layout teeth that are
-    // actually present so absent slots don't create gaps in the arch.
-    // Interactive mode (kid editor): keep all positions so every slot is
-    // tappable even when the tooth hasn't erupted yet.
     const layoutTeeth = interactive
       ? archTeeth
       : archTeeth.filter((t) => t.presence !== 'absent');
@@ -75,7 +97,7 @@ export function DentalArches({
 
     return layoutTeeth.map((tooth, i) => {
       const t = total === 1 ? 0.5 : i / (total - 1);
-      const angleDeg = 14 + 152 * t; // 14°..166°
+      const angleDeg = 14 + 152 * t;
       const angle = (angleDeg * Math.PI) / 180;
       const x = cx - rx * Math.cos(angle);
       const yOff = ry * Math.sin(angle);
@@ -108,13 +130,12 @@ export function DentalArches({
       role="img"
       aria-label="Dental arches"
     >
-      {/* Faint mouth-line between arches */}
       <line
         x1={cx - rx * 0.95}
         y1={size / 2}
         x2={cx + rx * 0.95}
         y2={size / 2}
-        stroke="hsl(var(--muted-foreground) / 0.2)"
+        stroke="hsl(var(--muted-foreground) / 0.15)"
         strokeWidth={1}
         strokeDasharray="4 4"
       />
@@ -147,31 +168,34 @@ function ToothGlyph({
   onClick,
   clipIdPrefix,
 }: ToothGlyphProps) {
-  const dims = TOOTH_DIMS[tooth.shape];
+  const base = TOOTH_DIMS[tooth.shape];
+  const scale = tooth.presence === 'primary' ? PRIMARY_SCALE : 1;
+  const dims: ToothDims = {
+    ow: base.ow * scale,
+    iw: base.iw * scale,
+    h:  base.h  * scale,
+    r:  base.r  * scale,
+  };
+
   const present = tooth.presence !== 'absent';
   const isPrimary = tooth.presence === 'primary';
 
-  // Within local tooth coords (after rotation):
-  //   * Upper teeth: -y points OUT of the mouth (cheek/lip side),
-  //                  +y points INTO the mouth (palate side)
-  //   * Lower teeth: -y points INTO the mouth (tongue side),
-  //                  +y points OUT of the mouth (cheek/lip side)
-  // So the "top" band of the rect is `outer` for the upper arch and `inner`
-  // for the lower arch, and vice versa for the "bottom" band.
   const topSurface: ToothSurface = tooth.arch === 'upper' ? 'outer' : 'inner';
   const bottomSurface: ToothSurface = tooth.arch === 'upper' ? 'inner' : 'outer';
 
   const [topRatio, midRatio, bottomRatio] = BAND_RATIOS[tooth.shape];
-  const topH = dims.h * topRatio;
-  const midH = dims.h * midRatio;
+  const topH   = dims.h * topRatio;
+  const midH   = dims.h * midRatio;
   const bottomH = dims.h * bottomRatio;
-  const topY = -dims.h / 2;
-  const midY = topY + topH;
+  const topY    = -dims.h / 2;
+  const midY    = topY + topH;
   const bottomY = midY + midH;
 
-  const fillFor = (s: ToothSurface) =>
-    brushed.has(s) ? brushColor : '#ffffff';
+  const fillFor = (s: ToothSurface) => (brushed.has(s) ? brushColor : '#ffffff');
+  const outline = toothPath(dims.ow, dims.iw, dims.h, dims.r);
 
+  // Max width for the band rects (they will be clipped anyway)
+  const maxW = Math.max(dims.ow, dims.iw);
   const clipId = `tooth-clip-${clipIdPrefix}-${tooth.id}`;
   const transition = 'fill 220ms ease-out';
 
@@ -183,122 +207,100 @@ function ToothGlyph({
       aria-label={`${tooth.label} (${tooth.presence})`}
       data-testid={`tooth-${tooth.id}`}
     >
-      {/* Larger invisible hit target for tapping in interactive mode */}
       {interactive && (
         <rect
-          x={-dims.w / 2 - 4}
-          y={-dims.h / 2 - 4}
-          width={dims.w + 8}
-          height={dims.h + 8}
+          x={-maxW / 2 - 5}
+          y={-dims.h / 2 - 5}
+          width={maxW + 10}
+          height={dims.h + 10}
           rx={dims.r + 4}
           fill="transparent"
         />
       )}
+
       {present ? (
         <>
           <defs>
             <clipPath id={clipId}>
-              <rect
-                x={-dims.w / 2}
-                y={-dims.h / 2}
-                width={dims.w}
-                height={dims.h}
-                rx={dims.r}
-                ry={dims.r}
-              />
+              <path d={outline} />
             </clipPath>
           </defs>
           <g clipPath={`url(#${clipId})`}>
-            {/* Top band */}
+            {/* Outer surface band */}
             <rect
-              x={-dims.w / 2}
+              x={-maxW / 2}
               y={topY}
-              width={dims.w}
+              width={maxW}
               height={topH}
               fill={fillFor(topSurface)}
               style={{ transition }}
             />
-            {/* Middle / biting band */}
+            {/* Biting / occlusal band */}
             <rect
-              x={-dims.w / 2}
+              x={-maxW / 2}
               y={midY}
-              width={dims.w}
+              width={maxW}
               height={midH}
               fill={fillFor('biting')}
               style={{ transition }}
             />
-            {/* Bottom band */}
+            {/* Inner surface band */}
             <rect
-              x={-dims.w / 2}
+              x={-maxW / 2}
               y={bottomY}
-              width={dims.w}
+              width={maxW}
               height={bottomH}
               fill={fillFor(bottomSurface)}
               style={{ transition }}
             />
-            {/* Faint band dividers to hint at the three surfaces */}
+            {/* Faint surface dividers */}
             <line
-              x1={-dims.w / 2}
-              x2={dims.w / 2}
-              y1={midY}
-              y2={midY}
-              stroke="rgba(0,0,0,0.08)"
-              strokeWidth={0.5}
+              x1={-maxW / 2} x2={maxW / 2}
+              y1={midY} y2={midY}
+              stroke="rgba(0,0,0,0.07)" strokeWidth={0.6}
             />
             <line
-              x1={-dims.w / 2}
-              x2={dims.w / 2}
-              y1={bottomY}
-              y2={bottomY}
-              stroke="rgba(0,0,0,0.08)"
-              strokeWidth={0.5}
+              x1={-maxW / 2} x2={maxW / 2}
+              y1={bottomY} y2={bottomY}
+              stroke="rgba(0,0,0,0.07)" strokeWidth={0.6}
             />
-            {/* Anatomical cusps / incisal edge */}
+            {/* Anatomical detail */}
             <ToothAnatomy
               shape={tooth.shape}
-              w={dims.w}
+              dims={dims}
               midY={midY}
               midH={midH}
+              isPrimary={isPrimary}
             />
           </g>
           {/* Crisp outline on top */}
-          <rect
-            x={-dims.w / 2}
-            y={-dims.h / 2}
-            width={dims.w}
-            height={dims.h}
-            rx={dims.r}
-            ry={dims.r}
+          <path
+            d={outline}
             fill="none"
             stroke={
               isPrimary
-                ? 'hsl(var(--muted-foreground) / 0.55)'
+                ? 'hsl(var(--muted-foreground) / 0.5)'
                 : 'hsl(var(--muted-foreground) / 0.45)'
             }
-            strokeWidth={1.2}
+            strokeWidth={1.3}
           />
-          {/* Primary tooth indicator dot — sits below the tooth (away from mouth opening) */}
+          {/* Primary tooth dot indicator */}
           {isPrimary && (
             <circle
               r={1.5}
               cx={0}
-              cy={dims.h / 2 + 3}
+              cy={dims.h / 2 + 3.5}
               fill={brushColor}
-              opacity={0.55}
+              opacity={0.5}
             />
           )}
         </>
       ) : (
         // Absent slot — dashed outline
-        <rect
-          x={-dims.w / 2}
-          y={-dims.h / 2}
-          width={dims.w}
-          height={dims.h}
-          rx={dims.r}
-          ry={dims.r}
+        <path
+          d={toothPath(base.ow, base.iw, base.h, base.r)}
           fill="none"
-          stroke="hsl(var(--muted-foreground) / 0.35)"
+          stroke="hsl(var(--muted-foreground) / 0.3)"
           strokeWidth={1}
           strokeDasharray="2 3"
         />
@@ -309,71 +311,99 @@ function ToothGlyph({
 
 function ToothAnatomy({
   shape,
-  w,
+  dims,
   midY,
   midH,
+  isPrimary,
 }: {
   shape: ToothShape;
-  w: number;
+  dims: ToothDims;
   midY: number;
   midH: number;
+  isPrimary: boolean;
 }) {
-  const cuspColor = 'rgba(60, 40, 40, 0.22)';
-  const cuspCenterY = midY + midH / 2;
+  const c = 'rgba(50, 35, 25, 0.20)';    // cusp/groove color
+  const cuspY = midY + midH / 2;          // vertical centre of biting zone
+  const { ow, iw } = dims;
+  const avgW = (ow + iw) / 2;
 
   if (shape === 'incisor') {
-    // Incisal edge — a thin line across the biting band
+    // Mamelons: 3 tiny rounded bumps along the incisal edge
+    if (!isPrimary) {
+      const spacing = avgW * 0.22;
+      return (
+        <>
+          {[-1, 0, 1].map((n) => (
+            <ellipse
+              key={n}
+              cx={n * spacing}
+              cy={cuspY}
+              rx={2.2}
+              ry={1.3}
+              fill={c}
+            />
+          ))}
+        </>
+      );
+    }
+    // Primary incisors: simple incisal line
     return (
       <line
-        x1={-w / 2 + 1.5}
-        x2={w / 2 - 1.5}
-        y1={cuspCenterY}
-        y2={cuspCenterY}
-        stroke={cuspColor}
-        strokeWidth={0.8}
+        x1={-avgW / 2 + 2} x2={avgW / 2 - 2}
+        y1={cuspY} y2={cuspY}
+        stroke={c} strokeWidth={1}
       />
     );
   }
+
   if (shape === 'canine') {
-    // Single pointy cusp — small triangle in the middle
-    const cuspW = 3;
-    const cuspH = 2.5;
-    return (
-      <path
-        d={`M ${-cuspW} ${cuspCenterY + cuspH / 2} L 0 ${cuspCenterY - cuspH / 2} L ${cuspW} ${cuspCenterY + cuspH / 2}`}
-        fill="none"
-        stroke={cuspColor}
-        strokeWidth={0.8}
-        strokeLinejoin="round"
-      />
-    );
-  }
-  if (shape === 'premolar') {
-    // Two cusps side by side
+    // Single prominent cusp ridge
+    const tipY = midY + midH * 0.35;
+    const baseW = avgW * 0.55;
     return (
       <>
-        <circle cx={-w / 5} cy={cuspCenterY} r={1.6} fill={cuspColor} />
-        <circle cx={w / 5} cy={cuspCenterY} r={1.6} fill={cuspColor} />
+        <ellipse cx={0} cy={tipY} rx={baseW / 2} ry={midH * 0.28} fill={c} />
+        {/* Cusp tip highlight */}
+        <ellipse cx={0} cy={tipY - midH * 0.06} rx={2} ry={1.4} fill="rgba(255,255,255,0.45)" />
       </>
     );
   }
-  // molar — four cusps in a 2×2 pattern with a faint central fissure
-  const offX = w / 4;
-  const offY = midH / 5;
+
+  if (shape === 'premolar') {
+    // Two cusps (buccal outer + lingual inner) separated by central groove
+    const halfX = avgW * 0.22;
+    const cuspR = isPrimary ? 2.8 : 3.2;
+    return (
+      <>
+        {/* Buccal cusp (outer side = top of local coords) */}
+        <ellipse cx={0} cy={midY + midH * 0.28} rx={cuspR} ry={cuspR * 0.85} fill={c} />
+        {/* Lingual cusp (inner side) */}
+        <ellipse cx={0} cy={midY + midH * 0.72} rx={cuspR * 0.82} ry={cuspR * 0.75} fill={c} />
+        {/* Central fissure */}
+        <line
+          x1={-halfX} x2={halfX}
+          y1={cuspY} y2={cuspY}
+          stroke={c} strokeWidth={0.9} strokeLinecap="round"
+        />
+      </>
+    );
+  }
+
+  // Molar — 4 cusps in 2×2 grid with H-fissure
+  const offX = avgW * 0.22;
+  const offY = midH * 0.22;
+  const cuspR = isPrimary ? 2.8 : 3.2;
+  const grooveC = 'rgba(50, 35, 25, 0.15)';
   return (
     <>
-      <circle cx={-offX} cy={cuspCenterY - offY} r={1.5} fill={cuspColor} />
-      <circle cx={offX} cy={cuspCenterY - offY} r={1.5} fill={cuspColor} />
-      <circle cx={-offX} cy={cuspCenterY + offY} r={1.5} fill={cuspColor} />
-      <circle cx={offX} cy={cuspCenterY + offY} r={1.5} fill={cuspColor} />
-      <line
-        x1={-w / 2 + 2}
-        x2={w / 2 - 2}
-        y1={cuspCenterY}
-        y2={cuspCenterY}
-        stroke={cuspColor}
-        strokeWidth={0.5}
-      />
+      {/* 4 cusps */}
+      <ellipse cx={-offX} cy={cuspY - offY} rx={cuspR} ry={cuspR * 0.9} fill={c} />
+      <ellipse cx={ offX} cy={cuspY - offY} rx={cuspR} ry={cuspR * 0.9} fill={c} />
+      <ellipse cx={-offX} cy={cuspY + offY} rx={cuspR * 0.88} ry={cuspR * 0.8} fill={c} />
+      <ellipse cx={ offX} cy={cuspY + offY} rx={cuspR * 0.88} ry={cuspR * 0.8} fill={c} />
+      {/* H-shaped central fissure */}
+      <line x1={-offX} x2={offX}  y1={cuspY} y2={cuspY}      stroke={grooveC} strokeWidth={0.9} strokeLinecap="round" />
+      <line x1={0}     x2={0}     y1={midY + midH * 0.18} y2={midY + midH * 0.82} stroke={grooveC} strokeWidth={0.8} strokeLinecap="round" />
     </>
   );
 }
