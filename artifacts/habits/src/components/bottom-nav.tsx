@@ -1,12 +1,9 @@
 import { Link, useLocation } from 'wouter';
-import { Home as HomeIcon, Timer, Users, Sun, Moon } from 'lucide-react';
-import { useTheme } from './theme-provider';
+import { Home as HomeIcon, Timer, Users, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function BottomNav() {
   const [location] = useLocation();
-  const { theme, setTheme } = useTheme();
-  const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 
   // Hide nav on the brush page (full-focus timer screen)
   if (location === '/brush') return null;
@@ -15,6 +12,7 @@ export function BottomNav() {
     { href: '/', label: 'Home', icon: HomeIcon, match: (p: string) => p === '/' },
     { href: '/brush', label: 'Brush', icon: Timer, match: (p: string) => p === '/brush' },
     { href: '/kids', label: 'Kids', icon: Users, match: (p: string) => p === '/kids' },
+    { href: '/settings', label: 'Settings', icon: Settings, match: (p: string) => p === '/settings' },
   ];
 
   return (
@@ -38,14 +36,6 @@ export function BottomNav() {
             </Link>
           );
         })}
-        <button
-          onClick={toggleTheme}
-          className="flex flex-col items-center justify-center w-16 h-full text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Toggle theme"
-        >
-          {theme === 'light' ? <Moon className="h-5 w-5 mb-1" /> : <Sun className="h-5 w-5 mb-1" />}
-          <span className="text-[10px] font-semibold">Theme</span>
-        </button>
       </div>
     </nav>
   );
