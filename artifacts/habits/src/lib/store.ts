@@ -33,7 +33,7 @@ export type BrushSticker = {
 
 // ── Virtual Pet ────────────────────────────────────────────────────────────
 
-export type PetSpecies = 'cat' | 'dog' | 'axolotl' | 'dino';
+export type PetSpecies = 'cat' | 'dog' | 'axolotl' | 'dino' | 'unicorn' | 'alien';
 
 export type Pet = {
   species: PetSpecies;
@@ -53,10 +53,12 @@ export type PetSpeciesInfo = {
 };
 
 export const PET_SPECIES_LIST: PetSpeciesInfo[] = [
-  { key: 'cat',     label: 'Cat',      emoji: '🐱', color: '#FF9F9F', defaultName: 'Whiskers' },
-  { key: 'dog',     label: 'Dog',      emoji: '🐶', color: '#FFCA3A', defaultName: 'Buddy'    },
-  { key: 'axolotl', label: 'Axolotl',  emoji: '🦎', color: '#FF85C2', defaultName: 'Axie'     },
-  { key: 'dino',    label: 'Dinosaur', emoji: '🦕', color: '#7BC67E', defaultName: 'Rex'      },
+  { key: 'cat',     label: 'Cat',       emoji: '🐱', color: '#FF9F9F', defaultName: 'Whiskers' },
+  { key: 'dog',     label: 'Dog',       emoji: '🐶', color: '#FFCA3A', defaultName: 'Buddy'    },
+  { key: 'axolotl', label: 'Axolotl',   emoji: '🦎', color: '#FF85C2', defaultName: 'Axie'     },
+  { key: 'dino',    label: 'Dinosaur',  emoji: '🦕', color: '#7BC67E', defaultName: 'Rex'      },
+  { key: 'unicorn', label: 'Unicorn',   emoji: '🦄', color: '#C084FC', defaultName: 'Sparkle'  },
+  { key: 'alien',   label: 'Cute Alien',emoji: '👾', color: '#34D399', defaultName: 'Zorp'     },
 ];
 
 export type PetCareItem = {
