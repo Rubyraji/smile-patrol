@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { nanoid } from 'nanoid';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { DEFAULT_AGE, type ToothId } from './teeth';
+import { sanitizeName } from './sanitize';
 
 export type Session = 'morning' | 'afternoon';
 export type BrushRecord = Partial<Record<Session, boolean>>;
@@ -409,7 +410,7 @@ export function useKids() {
       setKids((prev) => {
         const newKid: Kid = {
           id,
-          name: name.trim() || 'Kiddo',
+          name: sanitizeName(name) || 'Kiddo',
           emoji: emoji ?? KID_EMOJIS[prev.length % KID_EMOJIS.length],
           color: color ?? KID_COLORS[prev.length % KID_COLORS.length],
           age,
@@ -438,7 +439,9 @@ export function useKids() {
       id: string,
       updates: Partial<Pick<Kid, 'name' | 'emoji' | 'color' | 'age' | 'missingTeeth'>>,
     ) => {
-      setKids((prev) => prev.map((k) => (k.id === id ? { ...k, ...updates } : k)));
+      const sanitised = { ...updates };
+      if (typeof sanitised.name === 'string') sanitised.name = sanitizeName(sanitised.name) || 'Kiddo';
+      setKids((prev) => prev.map((k) => (k.id === id ? { ...k, ...sanitised } : k)));
     },
     [],
   );
@@ -598,7 +601,7 @@ export function useKids() {
     setKids((prev) =>
       prev.map((k) => {
         if (k.id !== kidId || !k.pet) return k;
-        return { ...k, pet: { ...k.pet, name: name.trim() || k.pet.name || 'Buddy' } };
+        return { ...k, pet: { ...k.pet, name: sanitizeName(name) || k.pet.name || 'Buddy' } };
       }),
     );
   }, []);
