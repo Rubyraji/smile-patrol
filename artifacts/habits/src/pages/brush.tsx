@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { useAudioCues } from '@/lib/use-audio-cues';
 
 type Zone = {
   key: 'top' | 'bottom';
@@ -96,6 +97,40 @@ export default function Brush() {
   const rafRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const baseRef = useRef(0);
+
+  // ── Audio cues ──────────────────────────────────────────────────────────
+  const { playZoneSwitch, playComplete, playCountdownBeep } = useAudioCues();
+
+  // Zone index computed early so effects can reference it (hooks must not come after early returns)
+  const zoneIdx = Math.min(1, Math.floor(elapsed / halfMs));
+  const zoneRemainingSec = Math.max(
+    0,
+    Math.ceil((halfMs * (zoneIdx + 1) - elapsed) / 1000),
+  );
+
+  // Chime when switching from top → bottom zone
+  const prevZoneRef = useRef(0);
+  useEffect(() => {
+    if (running && zoneIdx === 1 && prevZoneRef.current === 0) {
+      playZoneSwitch();
+    }
+    prevZoneRef.current = zoneIdx;
+  }, [zoneIdx, running, playZoneSwitch]);
+
+  // Fanfare when the timer completes
+  useEffect(() => {
+    if (completed) playComplete();
+  }, [completed, playComplete]);
+
+  // Countdown beeps in the last 5 seconds of each zone
+  const lastBeepSecRef = useRef(-1);
+  useEffect(() => {
+    if (!running) { lastBeepSecRef.current = -1; return; }
+    if (zoneRemainingSec >= 1 && zoneRemainingSec <= 5 && zoneRemainingSec !== lastBeepSecRef.current) {
+      lastBeepSecRef.current = zoneRemainingSec;
+      playCountdownBeep(zoneRemainingSec === 1);
+    }
+  }, [running, zoneRemainingSec, playCountdownBeep]);
 
   useEffect(() => {
     if (!running) return;
@@ -214,12 +249,7 @@ export default function Brush() {
     [completed, elapsed, teeth, halfMs],
   );
 
-  const zoneIdx = Math.min(1, Math.floor(elapsed / halfMs));
   const zone = ZONES[zoneIdx];
-  const zoneRemainingSec = Math.max(
-    0,
-    Math.ceil((halfMs * (zoneIdx + 1) - elapsed) / 1000),
-  );
 
   return (
     <div className="min-h-screen flex flex-col px-5 pt-4 pb-32">
