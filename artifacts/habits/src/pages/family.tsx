@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+// useMemo is used in both PointsLeaderboard and the page component
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { Flame, Award } from 'lucide-react';
 import { useKidsContext as useKids } from '@/lib/kids-context';
@@ -6,6 +7,8 @@ import { CertificateModal } from '@/components/certificate-modal';
 import {
   getWeekDays,
   getWeekProgress,
+  getWeeklyPoints,
+  getPointsLevel,
   getPetHappiness,
   getStreak,
   PET_SPECIES_LIST,
@@ -92,6 +95,92 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color?
   );
 }
 
+// ── Points leaderboard ────────────────────────────────────────────────────────
+
+function PointsLeaderboard({ kids, weekDays }: { kids: Kid[]; weekDays: Date[] }) {
+  const ranked = useMemo(() => {
+    return [...kids]
+      .map((kid) => ({ kid, pts: getWeeklyPoints(kid, weekDays) }))
+      .sort((a, b) => b.pts - a.pts);
+  }, [kids, weekDays]);
+
+  const topPts = ranked[0]?.pts ?? 1;
+
+  return (
+    <div className="bg-card rounded-3xl border-2 border-amber-200 p-5 space-y-3 shadow-sm">
+      <div className="flex items-center gap-2">
+        <span className="text-2xl">🏆</span>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground leading-none">
+            Points leaderboard
+          </p>
+          <p className="text-[11px] text-muted-foreground font-semibold">This week</p>
+        </div>
+      </div>
+
+      <div className="space-y-2.5">
+        {ranked.map(({ kid, pts }, i) => {
+          const level = getPointsLevel(pts);
+          const barPct = topPts === 0 ? 0 : Math.round((pts / topPts) * 100);
+          const isLeader = i === 0 && pts > 0;
+          return (
+            <div key={kid.id} className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                {/* Rank / crown */}
+                <span className="text-base leading-none w-5 shrink-0 text-center">
+                  {isLeader ? '👑' : `${i + 1}.`}
+                </span>
+                {/* Kid avatar */}
+                <div
+                  className="w-7 h-7 rounded-xl flex items-center justify-center text-sm shrink-0"
+                  style={{ backgroundColor: kid.color }}
+                >
+                  {kid.emoji}
+                </div>
+                {/* Name + level */}
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-black truncate">{kid.name}</span>
+                  <span
+                    className="ml-1.5 text-[10px] font-bold"
+                    style={{ color: kid.color }}
+                  >
+                    {level.emoji} {level.label}
+                  </span>
+                </div>
+                {/* Points */}
+                <span
+                  className="text-sm font-black tabular-nums shrink-0"
+                  style={{ color: kid.color }}
+                >
+                  {pts} pts
+                </span>
+              </div>
+              {/* Bar */}
+              <div className="ml-7 h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${barPct}%`,
+                    backgroundColor: isLeader ? '#F59E0B' : kid.color,
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {ranked.every(({ pts }) => pts === 0) && (
+        <p className="text-center text-xs text-muted-foreground font-semibold pt-1">
+          Start brushing to get on the board! 🦷
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Per-kid summary card ──────────────────────────────────────────────────────
+
 function KidSummaryCard({
   kid,
   weekDays,
@@ -102,6 +191,8 @@ function KidSummaryCard({
   onCertificate: () => void;
 }) {
   const progress = getWeekProgress(kid, weekDays);
+  const weekPts  = getWeeklyPoints(kid, weekDays);
+  const level    = getPointsLevel(weekPts);
   const streak = getStreak(kid);
   const petHappiness = getPetHappiness(kid, weekDays);
   const petInfo = kid.pet
@@ -155,6 +246,25 @@ function KidSummaryCard({
         >
           <Award className="h-4 w-4" />
         </button>
+      </div>
+
+      {/* ── Points badge row ────────────────────────── */}
+      <div
+        className="flex items-center gap-2 rounded-2xl px-3 py-2"
+        style={{ backgroundColor: `${kid.color}12` }}
+      >
+        <span className="text-base leading-none">{level.emoji}</span>
+        <span className="text-xs font-black" style={{ color: kid.color }}>
+          {level.label}
+        </span>
+        <span className="text-xs text-muted-foreground font-semibold flex-1">
+          · {weekPts} pts this week
+        </span>
+        {level.nextAt && (
+          <span className="text-[10px] font-bold text-muted-foreground">
+            {level.nextAt - weekPts} to next level
+          </span>
+        )}
       </div>
 
       {/* ── Mini week grid ──────────────────────────── */}
@@ -291,6 +401,11 @@ export default function Family() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ── Points leaderboard (2+ kids only) ───────────────────── */}
+        {kids.length > 1 && (
+          <PointsLeaderboard kids={kids} weekDays={weekDays} />
         )}
 
         {/* ── Per-kid cards ────────────────────────────────────────── */}
