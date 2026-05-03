@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   ArrowLeft,
@@ -131,6 +131,67 @@ export default function Brush() {
       playCountdownBeep(zoneRemainingSec === 1);
     }
   }, [running, zoneRemainingSec, playCountdownBeep]);
+
+  // ── Motivational messages ─────────────────────────────────────────────────
+  const ZONE_SWITCH_MSGS = [
+    'Halfway there! Keep going! 💪',
+    'Amazing! Now the bottom teeth! ⬇️',
+    "You're a brushing hero! 🦸",
+    'Halfway done — superstar! ⭐',
+    'Switch zones! Great work so far! 🌟',
+  ];
+  const ALMOST_DONE_MSGS = [
+    'Almost done! Hold on! 🎉',
+    'Just a few more seconds! 🏁',
+    "You're so close! Don't stop! 🚀",
+    'Final stretch — keep going! 💫',
+  ];
+
+  const [motivMsg, setMotivMsg] = useState<string | null>(null);
+  const motivTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showMotivMsg = useCallback((msg: string, durationMs_ = 2800) => {
+    if (motivTimerRef.current) clearTimeout(motivTimerRef.current);
+    setMotivMsg(msg);
+    motivTimerRef.current = setTimeout(() => setMotivMsg(null), durationMs_);
+  }, []);
+
+  // Zone-switch motivational pop-up (fires alongside the audio chime)
+  const prevZoneMsgRef = useRef(0);
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    if (running && zoneIdx === 1 && prevZoneMsgRef.current === 0) {
+      const msg = ZONE_SWITCH_MSGS[Math.floor(Math.random() * ZONE_SWITCH_MSGS.length)];
+      t = setTimeout(() => showMotivMsg(msg), 320);
+      prevZoneMsgRef.current = 1;
+    }
+    if (zoneIdx === 0) prevZoneMsgRef.current = 0;
+    return () => { if (t) clearTimeout(t); };
+  // ZONE_SWITCH_MSGS is stable (defined inline) — intentionally omitted from deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoneIdx, running, showMotivMsg]);
+
+  // "Almost done" pop-up when countdown hits 5 seconds
+  const almostDoneShownRef = useRef<number>(-1);
+  useEffect(() => {
+    if (!running) return;
+    if (zoneRemainingSec === 5 && almostDoneShownRef.current !== zoneIdx) {
+      almostDoneShownRef.current = zoneIdx;
+      const msg = ALMOST_DONE_MSGS[Math.floor(Math.random() * ALMOST_DONE_MSGS.length)];
+      showMotivMsg(msg, 4500);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, zoneRemainingSec, zoneIdx, showMotivMsg]);
+
+  // Clear message on reset
+  useEffect(() => {
+    if (!running && elapsed === 0) {
+      if (motivTimerRef.current) clearTimeout(motivTimerRef.current);
+      setMotivMsg(null);
+      prevZoneMsgRef.current = 0;
+      almostDoneShownRef.current = -1;
+    }
+  }, [running, elapsed]);
 
   useEffect(() => {
     if (!running) return;
@@ -445,6 +506,25 @@ export default function Brush() {
                   I'll remind you when to switch.
                 </p>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Motivational message banner */}
+      <div className="max-w-md w-full mx-auto -mt-1 mb-2 h-10">
+        <AnimatePresence>
+          {motivMsg && (
+            <motion.div
+              key={motivMsg}
+              initial={{ opacity: 0, scale: 0.85, y: -8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: -8 }}
+              transition={{ type: 'spring', stiffness: 340, damping: 22 }}
+              className="flex items-center justify-center gap-2 py-2 px-4 rounded-2xl shadow-sm text-sm font-black text-white text-center"
+              style={{ backgroundColor: activeKid.color }}
+            >
+              {motivMsg}
             </motion.div>
           )}
         </AnimatePresence>
