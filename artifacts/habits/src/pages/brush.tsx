@@ -437,7 +437,7 @@ export default function Brush() {
                     teeth={teeth}
                     brushedSurfaces={brushedSurfaces}
                     brushColor={activeKid.color}
-                    size={stickerEarned ? 180 : 210}
+                    size={stickerEarned ? 220 : 260}
                   />
                   <div
                     className={cn(
@@ -525,7 +525,7 @@ export default function Brush() {
                     teeth={teeth}
                     brushedSurfaces={brushedSurfaces}
                     brushColor={activeKid.color}
-                    size={220}
+                    size={260}
                   />
                   <p
                     className="text-3xl font-bold tabular-nums tracking-tight -mt-4"
