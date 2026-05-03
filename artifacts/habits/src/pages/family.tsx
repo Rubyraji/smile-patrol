@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
-import { Flame } from 'lucide-react';
+import { Flame, Award } from 'lucide-react';
 import { useKidsContext as useKids } from '@/lib/kids-context';
+import { CertificateModal } from '@/components/certificate-modal';
 import {
   getWeekDays,
   getWeekProgress,
@@ -91,7 +92,15 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color?
   );
 }
 
-function KidSummaryCard({ kid, weekDays }: { kid: Kid; weekDays: Date[] }) {
+function KidSummaryCard({
+  kid,
+  weekDays,
+  onCertificate,
+}: {
+  kid: Kid;
+  weekDays: Date[];
+  onCertificate: () => void;
+}) {
   const progress = getWeekProgress(kid, weekDays);
   const streak = getStreak(kid);
   const petHappiness = getPetHappiness(kid, weekDays);
@@ -136,6 +145,16 @@ function KidSummaryCard({ kid, weekDays }: { kid: Kid; weekDays: Date[] }) {
             {streak}
           </span>
         </div>
+        {/* Certificate button */}
+        <button
+          type="button"
+          onClick={onCertificate}
+          title="Print certificate"
+          className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors active:scale-95 shrink-0"
+          style={{ backgroundColor: `${kid.color}22`, color: kid.color }}
+        >
+          <Award className="h-4 w-4" />
+        </button>
       </div>
 
       {/* ── Mini week grid ──────────────────────────── */}
@@ -217,6 +236,7 @@ function KidSummaryCard({ kid, weekDays }: { kid: Kid; weekDays: Date[] }) {
 
 export default function Family() {
   const { kids } = useKids();
+  const [certKid, setCertKid] = useState<Kid | null>(null);
 
   const weekDays = useMemo(() => {
     const today = new Date();
@@ -282,7 +302,12 @@ export default function Family() {
           </div>
         ) : (
           kids.map((kid) => (
-            <KidSummaryCard key={kid.id} kid={kid} weekDays={weekDays} />
+            <KidSummaryCard
+              key={kid.id}
+              kid={kid}
+              weekDays={weekDays}
+              onCertificate={() => setCertKid(kid)}
+            />
           ))
         )}
 
@@ -306,6 +331,11 @@ export default function Family() {
           </div>
         )}
       </div>
+
+      {/* ── Certificate modal ────────────────────────────────────────── */}
+      {certKid && (
+        <CertificateModal kid={certKid} onClose={() => setCertKid(null)} />
+      )}
     </div>
   );
 }
