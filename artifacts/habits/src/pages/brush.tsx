@@ -294,7 +294,10 @@ export default function Brush() {
   const accentColor = theme.color || activeKid.color;
 
   return (
-    <div className="min-h-screen flex flex-col px-5 pt-4 pb-32">
+    <div
+      className="min-h-screen flex flex-col px-5 pt-4 pb-32 transition-colors duration-500"
+      style={{ backgroundColor: `${accentColor}0d` }}
+    >
       {/* Header */}
       <header className="flex items-center justify-between mb-4 max-w-md w-full mx-auto">
         <button
@@ -398,14 +401,14 @@ export default function Brush() {
                   onClick={() => setDurationChoice(2)}
                   data-testid="duration-2min"
                   className="flex-1 flex flex-col items-center gap-1.5 py-5 rounded-2xl border-2 bg-card transition-all"
-                  style={{ borderColor: `${activeKid.color}55` }}
+                  style={{ borderColor: `${accentColor}55` }}
                 >
                   <span className="text-3xl">🕐</span>
                   <span className="text-xl font-black">2 min</span>
                   <span className="text-xs text-muted-foreground font-semibold">Standard</span>
                   <span
                     className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: `${activeKid.color}22`, color: activeKid.color }}
+                    style={{ backgroundColor: `${accentColor}22`, color: accentColor }}
                   >
                     5 pts ⭐
                   </span>
@@ -419,24 +422,24 @@ export default function Brush() {
                   data-testid="duration-3min"
                   className="flex-1 flex flex-col items-center gap-1.5 py-5 rounded-2xl border-2 transition-all relative overflow-hidden"
                   style={{
-                    borderColor: activeKid.color,
-                    backgroundColor: `${activeKid.color}18`,
+                    borderColor: accentColor,
+                    backgroundColor: `${accentColor}18`,
                   }}
                 >
                   <span
                     className="absolute top-2 right-2 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full text-white leading-none"
-                    style={{ backgroundColor: activeKid.color }}
+                    style={{ backgroundColor: accentColor }}
                   >
                     BONUS
                   </span>
                   <span className="text-3xl">⭐</span>
                   <span className="text-xl font-black">3 min</span>
-                  <span className="text-xs font-bold" style={{ color: activeKid.color }}>
+                  <span className="text-xs font-bold" style={{ color: accentColor }}>
                     Earn a sticker!
                   </span>
                   <span
                     className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
-                    style={{ backgroundColor: activeKid.color }}
+                    style={{ backgroundColor: accentColor }}
                   >
                     10 pts ⭐⭐
                   </span>
@@ -726,7 +729,7 @@ export default function Brush() {
                 onClick={() => setPinOpen(true)}
                 size="lg"
                 className="w-full h-14 text-base font-bold rounded-2xl shadow-md gap-2"
-                style={{ backgroundColor: activeKid.color, color: '#fff' }}
+                style={{ backgroundColor: accentColor, color: '#fff' }}
                 data-testid="parent-confirm-button"
               >
                 <Lock className="h-5 w-5" />
@@ -737,7 +740,7 @@ export default function Brush() {
                 onClick={() => navigate('/')}
                 size="lg"
                 className="w-full h-14 text-base font-bold rounded-2xl shadow-md"
-                style={{ backgroundColor: activeKid.color, color: '#fff' }}
+                style={{ backgroundColor: accentColor, color: '#fff' }}
                 data-testid="finish-button"
               >
                 See my week
@@ -798,7 +801,7 @@ export default function Brush() {
         expectedPin={parentPin}
         onSuccess={handlePinSuccess}
         onForgotPin={() => setForgotPinOpen(true)}
-        accentColor={activeKid.color}
+        accentColor={accentColor}
         title="Parent sign-off"
         subtitle={`Enter your PIN to confirm ${activeKid.name}'s brush.`}
       />
