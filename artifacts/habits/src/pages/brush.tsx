@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useAudioCues } from '@/lib/use-audio-cues';
+import { FunFactCard } from '@/components/fun-fact-card';
 import { BRUSH_THEMES, THEME_ORDER, type BrushThemeKey } from '@/lib/brush-themes';
 
 export default function Brush() {
@@ -699,6 +700,22 @@ export default function Brush() {
           </div>
         )}
       </div>
+
+      {/* Fun fact — visible while brushing */}
+      <AnimatePresence>
+        {(running || (elapsed > 0 && !completed)) && (
+          <motion.div
+            key="brush-fun-fact"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.35 }}
+            className="max-w-md w-full mx-auto mt-4"
+          >
+            <FunFactCard kid={activeKid} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Controls */}
       <div className="max-w-md w-full mx-auto mt-6">
