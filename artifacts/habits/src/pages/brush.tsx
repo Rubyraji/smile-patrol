@@ -37,28 +37,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useAudioCues } from '@/lib/use-audio-cues';
-
-type Zone = {
-  key: 'top' | 'bottom';
-  label: string;
-  emoji: string;
-  hint: string;
-};
-
-const ZONES: Zone[] = [
-  {
-    key: 'top',
-    label: 'Top teeth',
-    emoji: '⬆️',
-    hint: 'Brush the teeth on top — front and back!',
-  },
-  {
-    key: 'bottom',
-    label: 'Bottom teeth',
-    emoji: '⬇️',
-    hint: 'Now brush the bottom teeth — front and back!',
-  },
-];
+import { BRUSH_THEMES, THEME_ORDER, type BrushThemeKey } from '@/lib/brush-themes';
 
 export default function Brush() {
   const [, navigate] = useLocation();
@@ -89,6 +68,17 @@ export default function Brush() {
   );
 
   const signoffRequired = requireParentSignoff && !!parentPin;
+
+  // ── Theme ─────────────────────────────────────────────────────────────────
+  const [themeKey, setThemeKey] = useState<BrushThemeKey>(() => {
+    const kidId = activeKid?.id ?? 'guest';
+    return (localStorage.getItem(`brush-theme-${kidId}`) as BrushThemeKey | null) ?? 'default';
+  });
+  const theme = BRUSH_THEMES[themeKey];
+  const handleThemeChange = (key: BrushThemeKey) => {
+    setThemeKey(key);
+    if (activeKid) localStorage.setItem(`brush-theme-${activeKid.id}`, key);
+  };
 
   // Derived constants from choice
   const durationMs = (durationChoice ?? 2) * 60_000;
@@ -132,20 +122,9 @@ export default function Brush() {
     }
   }, [running, zoneRemainingSec, playCountdownBeep]);
 
-  // ── Motivational messages ─────────────────────────────────────────────────
-  const ZONE_SWITCH_MSGS = [
-    'Halfway there! Keep going! 💪',
-    'Amazing! Now the bottom teeth! ⬇️',
-    "You're a brushing hero! 🦸",
-    'Halfway done — superstar! ⭐',
-    'Switch zones! Great work so far! 🌟',
-  ];
-  const ALMOST_DONE_MSGS = [
-    'Almost done! Hold on! 🎉',
-    'Just a few more seconds! 🏁',
-    "You're so close! Don't stop! 🚀",
-    'Final stretch — keep going! 💫',
-  ];
+  // ── Motivational messages (themed) ────────────────────────────────────────
+  const ZONE_SWITCH_MSGS = theme.zoneSwitchMsgs;
+  const ALMOST_DONE_MSGS = theme.almostDoneMsgs;
 
   const [motivMsg, setMotivMsg] = useState<string | null>(null);
   const motivTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -310,7 +289,8 @@ export default function Brush() {
     [completed, elapsed, teeth, halfMs],
   );
 
-  const zone = ZONES[zoneIdx];
+  const zone = theme.zones[zoneIdx];
+  const accentColor = theme.color || activeKid.color;
 
   return (
     <div className="min-h-screen flex flex-col px-5 pt-4 pb-32">
@@ -337,6 +317,34 @@ export default function Brush() {
 
         <div className="w-10" />
       </header>
+
+      {/* Theme picker */}
+      {!running && (
+        <div className="max-w-md w-full mx-auto mb-3 flex gap-2 justify-center">
+          {THEME_ORDER.map((key) => {
+            const t = BRUSH_THEMES[key];
+            const active = themeKey === key;
+            const btnColor = t.color || activeKid.color;
+            return (
+              <motion.button
+                key={key}
+                type="button"
+                whileTap={{ scale: 0.92 }}
+                onClick={() => handleThemeChange(key)}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all"
+                style={
+                  active
+                    ? { backgroundColor: btnColor, borderColor: btnColor, color: '#fff' }
+                    : { borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }
+                }
+              >
+                <span>{t.emoji}</span>
+                <span>{t.label}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Session toggle */}
       <div className="max-w-md w-full mx-auto mb-5">
@@ -437,30 +445,30 @@ export default function Brush() {
           ) : completed ? null : running || elapsed > 0 ? (
             /* ── Active zone banner ───────────────────────────────────── */
             <motion.div
-              key={zone.key}
+              key={zoneIdx === 0 ? 'top' : 'bottom'}
               initial={{ opacity: 0, y: -16, scale: 0.92 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -16, scale: 0.92 }}
               transition={{ type: 'spring', stiffness: 300, damping: 22 }}
               className="rounded-2xl p-4 flex items-center gap-3 shadow-md border-2"
               style={{
-                backgroundColor: `${activeKid.color}1f`,
-                borderColor: `${activeKid.color}66`,
+                backgroundColor: `${accentColor}1f`,
+                borderColor: `${accentColor}66`,
               }}
-              data-testid={`zone-banner-${zone.key}`}
+              data-testid={`zone-banner-${zoneIdx === 0 ? 'top' : 'bottom'}`}
             >
               <motion.div
                 animate={running ? { y: [0, -4, 0] } : {}}
                 transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
                 className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
-                style={{ backgroundColor: activeKid.color }}
+                style={{ backgroundColor: accentColor }}
               >
                 {zone.emoji}
               </motion.div>
               <div className="flex-1 min-w-0">
                 <p
                   className="text-[10px] font-bold uppercase tracking-wider"
-                  style={{ color: activeKid.color }}
+                  style={{ color: accentColor }}
                 >
                   Now brushing
                 </p>
@@ -470,7 +478,7 @@ export default function Brush() {
               <div className="text-right shrink-0">
                 <p
                   className="text-2xl font-bold tabular-nums leading-none"
-                  style={{ color: activeKid.color }}
+                  style={{ color: accentColor }}
                   data-testid="zone-remaining"
                 >
                   {zoneRemainingSec}s
@@ -489,8 +497,11 @@ export default function Brush() {
               style={{ borderColor: 'var(--border)' }}
               data-testid="zone-banner-ready"
             >
-              <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center text-2xl shrink-0">
-                ⬆️⬇️
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+                style={{ backgroundColor: `${accentColor}22` }}
+              >
+                {theme.zones[0].emoji}{theme.zones[1].emoji}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -500,7 +511,7 @@ export default function Brush() {
                   )}
                 </p>
                 <p className="text-sm font-bold leading-tight">
-                  Top teeth first, then bottom!
+                  {theme.zones[0].label} first, then {theme.zones[1].label}!
                 </p>
                 <p className="text-xs text-muted-foreground leading-snug">
                   I'll remind you when to switch.
@@ -522,7 +533,7 @@ export default function Brush() {
               exit={{ opacity: 0, scale: 0.85, y: -8 }}
               transition={{ type: 'spring', stiffness: 340, damping: 22 }}
               className="flex items-center justify-center gap-2 py-2 px-4 rounded-2xl shadow-sm text-sm font-black text-white text-center"
-              style={{ backgroundColor: activeKid.color }}
+              style={{ backgroundColor: accentColor }}
             >
               {motivMsg}
             </motion.div>
@@ -661,14 +672,15 @@ export default function Brush() {
         {/* Zone progress pips */}
         {durationChoice !== null && (
           <div className="flex gap-3 mt-6">
-            {ZONES.map((z, i) => {
+            {theme.zones.map((z, i) => {
+              const pipKey = i === 0 ? 'top' : 'bottom';
               const active = zoneIdx === i && (running || elapsed > 0);
               const done = elapsed >= halfMs * (i + 1);
               return (
                 <div
-                  key={z.key}
+                  key={pipKey}
                   className="flex items-center gap-1.5"
-                  data-testid={`zone-pip-${z.key}`}
+                  data-testid={`zone-pip-${pipKey}`}
                 >
                   <div
                     className={cn(
