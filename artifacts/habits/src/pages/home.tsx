@@ -21,7 +21,9 @@ import { StickerCollection } from '@/components/sticker-collection';
 import { PetCard } from '@/components/pet-card';
 import { RewardCelebration } from '@/components/reward-celebration';
 import { TodayChecklist } from '@/components/today-checklist';
+import { MissedYesterdayBanner } from '@/components/missed-yesterday-banner';
 import { Button } from '@/components/ui/button';
+import { type Session } from '@/lib/store';
 
 export default function Home() {
   const {
@@ -191,6 +193,17 @@ export default function Home() {
             )}
           </motion.div>
         )}
+
+        {/* Missed-yesterday catch-up banner */}
+        <MissedYesterdayBanner
+          kid={activeKid}
+          onMarkBrush={(dateStr, session: Session) =>
+            toggleSession(activeKid.id, dateStr, session)
+          }
+          onMarkTask={(taskId, dateStr) =>
+            toggleTaskCompletion(activeKid.id, taskId, dateStr)
+          }
+        />
 
         {/* TODAY — primary kid surface */}
         <TodayChecklist
