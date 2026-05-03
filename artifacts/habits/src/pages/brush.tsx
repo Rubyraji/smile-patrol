@@ -73,9 +73,10 @@ export default function Brush() {
   // ── Theme ─────────────────────────────────────────────────────────────────
   const [themeKey, setThemeKey] = useState<BrushThemeKey>(() => {
     const kidId = activeKid?.id ?? 'guest';
-    return (localStorage.getItem(`brush-theme-${kidId}`) as BrushThemeKey | null) ?? 'default';
+    const stored = localStorage.getItem(`brush-theme-${kidId}`);
+    return (stored && stored in BRUSH_THEMES ? stored : 'default') as BrushThemeKey;
   });
-  const theme = BRUSH_THEMES[themeKey];
+  const theme = BRUSH_THEMES[themeKey] ?? BRUSH_THEMES['default'];
   const handleThemeChange = (key: BrushThemeKey) => {
     setThemeKey(key);
     if (activeKid) localStorage.setItem(`brush-theme-${activeKid.id}`, key);
