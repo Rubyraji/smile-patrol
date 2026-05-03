@@ -11,6 +11,7 @@ export type BrushTheme = {
   label: string;
   emoji: string;
   color: string;
+  secondaryColor: string;
   zones: [BrushThemeZone, BrushThemeZone];
   zoneSwitchMsgs: string[];
   almostDoneMsgs: string[];
@@ -22,6 +23,7 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     label: 'Classic',
     emoji: '🦷',
     color: '',         // signals "use kid color"
+    secondaryColor: '',
     zones: [
       { emoji: '⬆️', label: 'Top teeth',    hint: 'Brush the teeth on top — front and back!' },
       { emoji: '⬇️', label: 'Bottom teeth', hint: 'Now brush the bottom teeth — front and back!' },
@@ -46,6 +48,7 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     label: 'Space',
     emoji: '🚀',
     color: '#1e3a5f',
+    secondaryColor: '#2563eb',
     zones: [
       { emoji: '🌌', label: 'Upper Galaxy', hint: 'Blast through the top teeth — front and back!' },
       { emoji: '🪐', label: 'Lower Galaxy',  hint: 'Launch to the bottom teeth — front and back!' },
@@ -69,6 +72,7 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     label: 'Ocean',
     emoji: '🌊',
     color: '#0ea5e9',
+    secondaryColor: '#0369a1',
     zones: [
       { emoji: '🐠', label: 'Surface Waters', hint: 'Dive through the top teeth — front and back!' },
       { emoji: '🦈', label: 'Deep Ocean',     hint: 'Now dive to the bottom teeth — front and back!' },
@@ -92,6 +96,7 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     label: 'Jungle',
     emoji: '🌿',
     color: '#22c55e',
+    secondaryColor: '#15803d',
     zones: [
       { emoji: '🦜', label: 'Treetops',     hint: 'Swing through the top teeth — front and back!' },
       { emoji: '🐊', label: 'Forest Floor', hint: 'Now stomp through the bottom teeth — front and back!' },
@@ -115,6 +120,7 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     label: 'Fairy',
     emoji: '🧚',
     color: '#c084fc',
+    secondaryColor: '#7c3aed',
     zones: [
       { emoji: '🌸', label: 'Blossom Arch',    hint: 'Sprinkle fairy dust on the top teeth — front and back!' },
       { emoji: '🦋', label: 'Dewdrop Hollow',  hint: 'Flutter to the bottom teeth — spread the sparkle!' },

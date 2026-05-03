@@ -292,6 +292,7 @@ export default function Brush() {
 
   const zone = theme.zones[zoneIdx];
   const accentColor = theme.color || activeKid.color;
+  const secondaryColor = theme.secondaryColor || activeKid.color;
 
   return (
     <div
@@ -364,11 +365,10 @@ export default function Brush() {
                 data-testid={`session-toggle-${s}`}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-semibold transition-all',
-                  active
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
+                  active ? 'shadow-sm' : 'text-muted-foreground hover:text-foreground',
                   running && 'opacity-60 cursor-not-allowed',
                 )}
+                style={active ? { backgroundColor: secondaryColor, color: '#fff' } : {}}
               >
                 <Icon className="h-4 w-4" />
                 {s === 'morning' ? 'Morning' : 'Evening'}
