@@ -832,6 +832,72 @@ export function getStreak(kid: Kid): number {
  * all their configured tasks.  Today is skipped when it isn't finished yet
  * so the streak doesn't reset mid-day.
  */
+// ── Points system ─────────────────────────────────────────────────────────────
+
+export const POINT_VALUES = {
+  brush:      5,   // per brushing session (any duration)
+  bonus3min:  5,   // extra when a 3-min brush sticker exists for that session
+  floss:      3,
+  toothCream: 3,
+  task:       2,   // any other task
+  perfectDay: 5,   // all sessions + all tasks done on the same day
+} as const;
+
+export type DayPoints = {
+  brushPoints:  number;
+  bonusPoints:  number; // 3-min sticker bonuses
+  taskPoints:   number;
+  perfectBonus: number;
+  total:        number;
+};
+
+export function getPointsForDate(kid: Kid, dateStr: string): DayPoints {
+  const rec = kid.brushings[dateStr] ?? {};
+  let brushPoints = 0;
+  let sessionsDone = 0;
+  for (const s of ['morning', 'afternoon'] as Session[]) {
+    if (rec[s]) { brushPoints += POINT_VALUES.brush; sessionsDone++; }
+  }
+
+  // Each brushSticker on this date = one 3-min brush was completed
+  const stickersToday = (kid.brushStickers ?? []).filter((s) => s.date === dateStr).length;
+  const bonusPoints = stickersToday * POINT_VALUES.bonus3min;
+
+  let taskPoints = 0;
+  let tasksDone = 0;
+  for (const task of kid.tasks) {
+    if (kid.taskCompletions[task.id]?.[dateStr]) {
+      tasksDone++;
+      if (task.name === 'Floss')        taskPoints += POINT_VALUES.floss;
+      else if (task.name === 'Tooth cream') taskPoints += POINT_VALUES.toothCream;
+      else                              taskPoints += POINT_VALUES.task;
+    }
+  }
+
+  const allDone = sessionsDone === 2 && tasksDone === kid.tasks.length && kid.tasks.length > 0;
+  const perfectBonus = allDone ? POINT_VALUES.perfectDay : 0;
+
+  return { brushPoints, bonusPoints, taskPoints, perfectBonus,
+           total: brushPoints + bonusPoints + taskPoints + perfectBonus };
+}
+
+export function getWeeklyPoints(kid: Kid, weekDays: Date[]): number {
+  return weekDays.reduce(
+    (sum, d) => sum + getPointsForDate(kid, format(d, 'yyyy-MM-dd')).total,
+    0,
+  );
+}
+
+export type PointsLevel = { label: string; emoji: string; nextAt: number | null };
+
+export function getPointsLevel(pts: number): PointsLevel {
+  if (pts <  30) return { label: 'Just Starting',   emoji: '🌱', nextAt: 30  };
+  if (pts <  80) return { label: 'Good Brusher',    emoji: '⭐', nextAt: 80  };
+  if (pts < 140) return { label: 'Dental Champion', emoji: '🏆', nextAt: 140 };
+  if (pts < 200) return { label: 'Super Brusher',   emoji: '🚀', nextAt: 200 };
+  return               { label: 'Brushing Legend',  emoji: '👑', nextAt: null };
+}
+
 export function getFamilyStreak(kids: Kid[]): number {
   if (kids.length === 0) return 0;
 

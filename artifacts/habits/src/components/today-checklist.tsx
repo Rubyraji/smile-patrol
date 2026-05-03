@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import { Check, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { type Kid } from '@/lib/store';
+import { type Kid, POINT_VALUES } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
 type Goal = {
@@ -39,11 +39,16 @@ export function TodayChecklist({ kid, onToggleTask }: Props) {
     });
   const nightTasks = kid.tasks.filter((t) => t.time === 'night');
 
+  const taskPts = (name: string) =>
+    name === 'Floss' ? POINT_VALUES.floss
+    : name === 'Tooth cream' ? POINT_VALUES.toothCream
+    : POINT_VALUES.task;
+
   const taskToGoal = (t: (typeof kid.tasks)[number], hint: string): Goal => ({
     id: `task-${t.id}`,
     emoji: t.emoji,
     label: t.name,
-    hint,
+    hint: `${hint} · ${taskPts(t.name)} pts`,
     done: !!kid.taskCompletions[t.id]?.[today],
     kind: 'task',
   });
@@ -53,7 +58,7 @@ export function TodayChecklist({ kid, onToggleTask }: Props) {
       id: 'morning',
       emoji: '☀️',
       label: 'Morning brush',
-      hint: 'Tap to start the timer',
+      hint: 'Tap to start · up to 10 pts',
       done: !!brushings.morning,
       kind: 'brush',
     },
@@ -62,11 +67,11 @@ export function TodayChecklist({ kid, onToggleTask }: Props) {
       id: 'evening',
       emoji: '🌙',
       label: 'Bedtime brush',
-      hint: 'Tap to start the timer',
+      hint: 'Tap to start · up to 10 pts',
       done: !!brushings.afternoon,
       kind: 'brush',
     },
-    ...nightTasks.map((t) => taskToGoal(t, 'Do this right after the bedtime brush')),
+    ...nightTasks.map((t) => taskToGoal(t, 'Do this right after bedtime brush')),
   ];
 
   const doneCount = goals.filter((g) => g.done).length;

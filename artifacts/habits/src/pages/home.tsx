@@ -22,6 +22,7 @@ import { PetCard } from '@/components/pet-card';
 import { RewardCelebration } from '@/components/reward-celebration';
 import { TodayChecklist } from '@/components/today-checklist';
 import { MissedYesterdayBanner } from '@/components/missed-yesterday-banner';
+import { PointsCard } from '@/components/points-card';
 import { Button } from '@/components/ui/button';
 import { type Session } from '@/lib/store';
 
@@ -212,6 +213,9 @@ export default function Home() {
             toggleTaskCompletion(activeKid.id, taskId, dateStr)
           }
         />
+
+        {/* Points */}
+        <PointsCard kid={activeKid} />
 
         {/* Weekly reward */}
         <RewardCard

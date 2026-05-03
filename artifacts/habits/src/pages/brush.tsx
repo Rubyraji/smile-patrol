@@ -303,6 +303,12 @@ export default function Brush() {
                   <span className="text-3xl">🕐</span>
                   <span className="text-xl font-black">2 min</span>
                   <span className="text-xs text-muted-foreground font-semibold">Standard</span>
+                  <span
+                    className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: `${activeKid.color}22`, color: activeKid.color }}
+                  >
+                    5 pts ⭐
+                  </span>
                 </motion.button>
 
                 {/* 3-minute option — bonus highlighted */}
@@ -327,6 +333,12 @@ export default function Brush() {
                   <span className="text-xl font-black">3 min</span>
                   <span className="text-xs font-bold" style={{ color: activeKid.color }}>
                     Earn a sticker!
+                  </span>
+                  <span
+                    className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
+                    style={{ backgroundColor: activeKid.color }}
+                  >
+                    10 pts ⭐⭐
                   </span>
                 </motion.button>
               </div>
