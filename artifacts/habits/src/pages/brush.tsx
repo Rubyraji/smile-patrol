@@ -544,7 +544,7 @@ export default function Brush() {
 
       {/* Dial */}
       <div className="flex-1 flex flex-col items-center justify-center">
-        <BrushDial progress={progress} color={activeKid.color} pulse={running}>
+        <BrushDial progress={progress} color={accentColor} pulse={running}>
           <div className="text-center select-none w-full px-2">
             <AnimatePresence mode="wait">
               {completed ? (
@@ -771,7 +771,7 @@ export default function Brush() {
               onClick={running ? handlePause : handleStart}
               size="lg"
               className="flex-1 h-16 rounded-2xl text-lg font-bold shadow-md gap-2"
-              style={{ backgroundColor: activeKid.color, color: '#fff' }}
+              style={{ backgroundColor: accentColor, color: '#fff' }}
               disabled={durationChoice === null}
               data-testid={running ? 'pause-button' : 'start-button'}
             >
