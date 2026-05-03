@@ -547,8 +547,8 @@ export default function Brush() {
       </div>
 
       {/* Dial */}
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <BrushDial progress={progress} color={accentColor} pulse={running}>
+      <div className="flex-1 flex flex-col items-center justify-center w-full">
+        <BrushDial progress={progress} color={accentColor} pulse={running} size={340}>
           <div className="text-center select-none w-full px-2">
             <AnimatePresence mode="wait">
               {completed ? (
