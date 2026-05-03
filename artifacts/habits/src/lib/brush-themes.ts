@@ -1,4 +1,4 @@
-export type BrushThemeKey = 'default' | 'space' | 'ocean' | 'jungle';
+export type BrushThemeKey = 'default' | 'space' | 'ocean' | 'jungle' | 'fairy';
 
 export type BrushThemeZone = {
   emoji: string;
@@ -109,6 +109,29 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
       'Jungle champion — almost done! 🏆',
     ],
   },
+
+  fairy: {
+    key: 'fairy',
+    label: 'Fairy',
+    emoji: '🧚',
+    color: '#c084fc',
+    zones: [
+      { emoji: '🌸', label: 'Blossom Arch',    hint: 'Sprinkle fairy dust on the top teeth — front and back!' },
+      { emoji: '🦋', label: 'Dewdrop Hollow',  hint: 'Flutter to the bottom teeth — spread the sparkle!' },
+    ],
+    zoneSwitchMsgs: [
+      'Flutter to the hollow — fairy dust works! 🦋',
+      'Halfway done! You\'re sparkling! ✨',
+      'Magic is halfway there — keep flying! 🧚',
+      'Sprinkle your way to the bottom! 🌸',
+    ],
+    almostDoneMsgs: [
+      'Almost done, little fairy! 🌟',
+      'Last few sparkles — hold on! 🧚',
+      'Your fairy magic is almost complete! ✨',
+      'Nearly done — wish upon a tooth! 🌙',
+    ],
+  },
 };
 
-export const THEME_ORDER: BrushThemeKey[] = ['default', 'space', 'ocean', 'jungle'];
+export const THEME_ORDER: BrushThemeKey[] = ['default', 'space', 'ocean', 'jungle', 'fairy'];
