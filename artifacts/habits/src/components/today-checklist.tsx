@@ -23,7 +23,6 @@ interface Props {
 export function TodayChecklist({ kid, onToggleTask }: Props) {
   const today = format(new Date(), 'yyyy-MM-dd');
   const brushings = kid.brushings[today] ?? {};
-  const taskComps = kid.taskCompletions[today] ?? {};
 
   // Keep quick-toggle presets (Floss → Tooth cream) in their defined order,
   // then append any custom anytime tasks in the order they were added.
@@ -45,7 +44,7 @@ export function TodayChecklist({ kid, onToggleTask }: Props) {
     emoji: t.emoji,
     label: t.name,
     hint,
-    done: !!taskComps[t.id],
+    done: !!kid.taskCompletions[t.id]?.[today],
     kind: 'task',
   });
 
