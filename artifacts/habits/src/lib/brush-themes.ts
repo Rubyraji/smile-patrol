@@ -45,7 +45,7 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     key: 'space',
     label: 'Space',
     emoji: '🚀',
-    color: '#6366f1',
+    color: '#1e3a5f',
     zones: [
       { emoji: '🌌', label: 'Upper Galaxy', hint: 'Blast through the top teeth — front and back!' },
       { emoji: '🪐', label: 'Lower Galaxy',  hint: 'Launch to the bottom teeth — front and back!' },
