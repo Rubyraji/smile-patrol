@@ -107,40 +107,31 @@ export default function Home() {
             <div>
               <h1 className="text-4xl font-black flex items-center gap-2.5 leading-none mb-0.5">
                 <span className="relative inline-flex items-center justify-center w-10 h-10 shrink-0">
-                  {/* Molar SVG — wide crown with 4 cusps + two diverging roots */}
-                  <svg viewBox="0 0 48 48" fill="none" className="w-9 h-9" xmlns="http://www.w3.org/2000/svg">
-                    {/* Outer molar shape: wide crown, four cusps on top, two roots */}
+                  {/* Molar SVG — wide crown + 2 clear cusps + 2 separate diverging roots */}
+                  <svg viewBox="0 0 48 46" fill="none" className="w-10 h-9" xmlns="http://www.w3.org/2000/svg">
+                    {/* Two roots — drawn first so crown sits on top */}
                     <path
-                      d="
-                        M7 30 C6 24 6 18 7 14 C8 10 10 7 12 7 C13 6 15 6 16 8 C17 10 18 11 20 11
-                        C22 11 23 10 24 8 C25 6 27 6 28 8 C29 10 30 11 32 11
-                        C34 11 35 10 36 8 C37 6 39 7 40 9 C41 11 42 15 42 18
-                        C42 22 41 26 41 30
-                        L36 30 C36 34 37 38 37 42 C37 44 35 44 34 42 C33 40 32 36 30 32
-                        L28 32 C28 33 26 34 24 34 C22 34 20 33 20 32
-                        L18 32 C16 36 15 40 14 42 C13 44 11 44 11 42 C11 38 12 34 12 30
-                        Z
-                      "
-                      fill="white"
-                      stroke="#CBD5E1"
-                      strokeWidth="1.5"
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
+                      d="M6 25 C5 30 5 35 6 40 C7 43 9 44 12 44 C15 44 17 43 18 40 C19 35 18 30 18 25 Z"
+                      fill="white" stroke="#CBD5E1" strokeWidth="1.5" strokeLinejoin="round"
                     />
-                    {/* Central occlusal fissure */}
                     <path
-                      d="M16 20 C18 22 20 21 24 22 C28 23 30 21 32 20"
-                      stroke="#DDE3EC"
-                      strokeWidth="1.1"
-                      strokeLinecap="round"
-                      fill="none"
+                      d="M29 25 C28 30 28 35 29 40 C30 43 32 44 35 44 C38 44 40 43 41 40 C42 35 42 30 41 25 Z"
+                      fill="white" stroke="#CBD5E1" strokeWidth="1.5" strokeLinejoin="round"
+                    />
+                    {/* Wide crown with two prominent cusps */}
+                    <path
+                      d="M5 26 L5 22 C5 17 8 14 11 11 C12 10 13 9 15 8 C17 9 19 12 22 13 C25 12 27 9 29 8 C31 7 33 9 36 11 C39 13 42 17 43 22 L43 26 Z"
+                      fill="white" stroke="#CBD5E1" strokeWidth="1.5" strokeLinejoin="round"
+                    />
+                    {/* Occlusal groove */}
+                    <path
+                      d="M15 18 C18 21 20 20 22 20 C24 20 26 19 29 18"
+                      stroke="#DDE3EC" strokeWidth="1.1" strokeLinecap="round" fill="none"
                     />
                     {/* Crown highlight */}
                     <path
-                      d="M10 13 C12 11 16 11 18 13"
-                      stroke="#F1F5F9"
-                      strokeWidth="1.4"
-                      strokeLinecap="round"
+                      d="M10 14 C12 12 16 12 18 14"
+                      stroke="#F1F5F9" strokeWidth="1.4" strokeLinecap="round"
                     />
                   </svg>
                   {/* Sparkles */}
