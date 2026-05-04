@@ -598,6 +598,34 @@ function KidEditor({
             </p>
           </div>
 
+          {/* Parent sign-off toggle — per kid, shown with main settings */}
+          {kid && (
+            <div className="flex items-center justify-between gap-3 p-3 rounded-2xl border-2 border-border bg-card">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <span className="w-11 h-11 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <Lock className="h-5 w-5 text-muted-foreground" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold leading-tight">Require parent sign-off</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                    {!parentPin
+                      ? 'Set a parent PIN first (on the Kids page).'
+                      : kid.requireSignoff
+                        ? 'On — a PIN is needed after each brush.'
+                        : 'Off — brushes log without a PIN.'}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={!!kid.requireSignoff}
+                onCheckedChange={onToggleSignoff}
+                disabled={!parentPin}
+                aria-label={`Require parent sign-off for ${kid.name}`}
+                data-testid="per-kid-signoff-switch"
+              />
+            </div>
+          )}
+
           {/* Daily extras section - only for existing kids */}
           {kid && (
             <div className="pt-2 border-t -mx-5 px-5">
@@ -782,33 +810,6 @@ function KidEditor({
                 )}
               </div>
 
-              {/* Parent sign-off toggle — per kid */}
-              <div className="pt-4 border-t mt-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <span className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                      <Lock className="h-5 w-5 text-muted-foreground" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold leading-tight">Require parent sign-off</p>
-                      <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                        {!parentPin
-                          ? 'Set a parent PIN first (see the PIN section below).'
-                          : kid.requireSignoff
-                            ? 'On — a PIN is needed after each brush.'
-                            : 'Off — brushes log without a PIN.'}
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={!!kid.requireSignoff}
-                    onCheckedChange={onToggleSignoff}
-                    disabled={!parentPin}
-                    aria-label={`Require parent sign-off for ${kid.name}`}
-                    data-testid="per-kid-signoff-switch"
-                  />
-                </div>
-              </div>
             </div>
           )}
         </div>
