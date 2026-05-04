@@ -670,29 +670,34 @@ export default function Brush() {
                   animate={{ opacity: 1 }}
                   className="flex flex-col items-center"
                 >
-                  <DentalArches
-                    teeth={teeth}
-                    brushedSurfaces={brushedSurfaces}
-                    brushColor={activeKid.color}
-                    primaryOutlineColor={theme.primaryOutline}
-                    permanentOutlineColor={theme.permanentOutline}
-                    size={260}
-                  />
-                  <p
-                    className="text-3xl font-bold tabular-nums tracking-tight -mt-4"
-                    data-testid="timer-display"
-                  >
-                    {durationChoice !== null
-                      ? `${mins}:${secs.toString().padStart(2, '0')}`
-                      : '--:--'}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground -mt-0.5">
-                    {running
-                      ? 'Total time left'
-                      : durationChoice !== null
-                        ? 'Tap start to begin'
-                        : 'Choose a time above'}
-                  </p>
+                  <div className="relative">
+                    <DentalArches
+                      teeth={teeth}
+                      brushedSurfaces={brushedSurfaces}
+                      brushColor={activeKid.color}
+                      primaryOutlineColor={theme.primaryOutline}
+                      permanentOutlineColor={theme.permanentOutline}
+                      size={260}
+                    />
+                    {/* Timer centred inside the arch ring */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <p
+                        className="text-3xl font-bold tabular-nums tracking-tight"
+                        data-testid="timer-display"
+                      >
+                        {durationChoice !== null
+                          ? `${mins}:${secs.toString().padStart(2, '0')}`
+                          : '--:--'}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground font-semibold mt-0.5">
+                        {running
+                          ? 'Total time left'
+                          : durationChoice !== null
+                            ? 'Tap start to begin'
+                            : 'Choose a time above'}
+                      </p>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
