@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format, startOfWeek } from 'date-fns';
 import {
   type Kid,
@@ -367,85 +367,8 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
   }
 
   /* ── Alive ───────────────────────────────────────────────────── */
+  const walkDuration = hearts > 3 ? 4 : hearts > 1 ? 6 : 10;
   const walkSpeed    = hearts > 3 ? 2.2 : hearts > 1 ? 1.4 : 0.7;
-  const travelMs     = hearts > 3 ? 1800 : hearts > 1 ? 2600 : 4000;
-  const sitMs        = hearts > 3 ? 2200 : hearts > 1 ? 2800 : 3600;
-
-  const walkControls  = useAnimationControls();
-  const [petWalking, setPetWalking] = useState(true);
-  const aliveRef       = useRef(true);
-  const travelMsRef    = useRef(travelMs);
-  const sitMsRef       = useRef(sitMs);
-  travelMsRef.current  = travelMs;
-  sitMsRef.current     = sitMs;
-
-  useEffect(() => {
-    aliveRef.current = true;
-
-    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-    const loop = async () => {
-      while (aliveRef.current) {
-        // — enter from left —
-        setPetWalking(true);
-        walkControls.set({ x: -175, scaleX: 1, y: 0 });
-        await walkControls.start({
-          x: 0,
-          transition: { duration: travelMsRef.current / 1000, ease: [0.0, 0.0, 0.2, 1.0] },
-        });
-        if (!aliveRef.current) break;
-
-        // — landing settle: squash down then spring back —
-        await walkControls.start({
-          y: [0, 8, -4, 1, 0],
-          transition: { duration: 0.48, ease: 'easeOut' },
-        });
-        walkControls.set({ y: 0 });
-        if (!aliveRef.current) break;
-
-        // — turn to face viewer (flip horizontally) —
-        await walkControls.start({
-          scaleX: -1,
-          transition: { duration: 0.1 },
-        });
-        if (!aliveRef.current) break;
-
-        // — sit —
-        setPetWalking(false);
-        await sleep(sitMsRef.current);
-        if (!aliveRef.current) break;
-
-        // — turn back to face right before leaving —
-        setPetWalking(true);
-        await walkControls.start({
-          scaleX: 1,
-          transition: { duration: 0.1 },
-        });
-        if (!aliveRef.current) break;
-
-        // — tiny anticipation step back —
-        await walkControls.start({
-          x: -12,
-          transition: { duration: 0.16, ease: 'easeOut' },
-        });
-        if (!aliveRef.current) break;
-
-        // — exit to the right: accelerates away —
-        await walkControls.start({
-          x: 175,
-          transition: { duration: travelMsRef.current / 1000, ease: [0.8, 0.0, 1.0, 1.0] },
-        });
-        if (!aliveRef.current) break;
-
-        // — off-screen pause before looping —
-        await sleep(300);
-      }
-    };
-
-    loop();
-    return () => { aliveRef.current = false; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <div
@@ -471,19 +394,22 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
           style={{ background: `linear-gradient(to top, ${info.color}18, transparent)` }}
         />
 
-        {/* Pet — centred in the play area; walkControls drives x movement */}
+        {/* Walking pet — outer handles x + flip, sprite handles its own animation */}
         <motion.div
           className="absolute"
-          style={{ bottom: 8, left: '50%', marginLeft: -45 }}
-          animate={walkControls}
-          initial={{ x: -175, scaleX: 1 }}
+          style={{ bottom: 8 }}
+          animate={{
+            x: [-88, 88, 88, -88, -88],
+            scaleX: [1, 1, -1, -1, 1],
+          }}
+          transition={{
+            duration: walkDuration,
+            repeat: Infinity,
+            ease: 'linear',
+            times: [0, 0.45, 0.5, 0.95, 1],
+          }}
         >
-          <PetSprite
-            species={pet.species}
-            color={info.color}
-            speed={walkSpeed}
-            walking={petWalking}
-          />
+          <PetSprite species={pet.species} color={info.color} speed={walkSpeed} />
         </motion.div>
 
         {/* Floating mood bubble */}
