@@ -4,6 +4,7 @@ import { format, startOfWeek } from 'date-fns';
 import {
   type Kid,
   PET_SPECIES_LIST,
+  SHOP_ITEMS,
   getPetHappiness,
   getWeekDays,
 } from '@/lib/store';
@@ -158,9 +159,11 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
   const hearts = getPetHappiness(kid, weekDays);
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
   const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const careThisWeek = (kid.brushStickers ?? []).filter(
-    (s) => s.date >= weekStart && s.date <= todayStr,
-  );
+  const shopThisWeek = (kid.purchases ?? []).filter((p) => {
+    const d = p.purchasedAt.slice(0, 10);
+    return d >= weekStart && d <= todayStr;
+  }).map((p) => ({ ...p, item: SHOP_ITEMS.find((i) => i.id === p.itemId) }))
+    .filter((p) => p.item);
 
   const petEmoji = !pet.hatched ? '🥚' : info.emoji;
 
@@ -442,29 +445,33 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
 
       {/* Care items this week */}
       <div className="mt-3 pt-3 border-t border-border/40 relative">
-        {careThisWeek.length > 0 ? (
+        {shopThisWeek.length > 0 ? (
           <>
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-              Fed this week
+              Cared for this week
             </p>
             <div className="flex gap-1.5 flex-wrap">
-              {careThisWeek.slice(-10).map((s, i) => (
+              {shopThisWeek.slice(-12).map((p, i) => (
                 <motion.span
-                  key={`${s.date}-${i}`}
+                  key={p.id}
                   initial={{ scale: 0, rotate: -15 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 14, delay: Math.min(i * 0.04, 0.4) }}
                   className="text-xl"
-                  title={s.name}
+                  title={p.item!.name}
                 >
-                  {s.sticker}
+                  {p.item!.emoji}
                 </motion.span>
               ))}
             </div>
+            <p className="text-[10px] text-muted-foreground mt-1.5 font-semibold">
+              {!shopThisWeek.some((p) => p.item!.category === 'food') && '🍖 Visit the shop to feed them! '}
+              {!shopThisWeek.some((p) => p.item!.category === 'exercise' || p.item!.category === 'sleep') && '🏃 Try exercise or sleep too!'}
+            </p>
           </>
         ) : (
           <p className="text-xs text-muted-foreground font-semibold">
-            🍽️ Brush for <strong>3 min</strong> to feed {pet.name}!
+            🛍️ Visit the <strong>Pet Shop</strong> to feed &amp; care for {pet.name}!
           </p>
         )}
       </div>
