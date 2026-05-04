@@ -106,7 +106,49 @@ export default function Home() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-4xl font-black flex items-center gap-2.5 leading-none mb-0.5">
-                <span>🦷</span>
+                <span className="relative inline-flex items-center justify-center w-10 h-10 shrink-0">
+                  {/* Sleek SVG tooth */}
+                  <svg viewBox="0 0 36 42" fill="none" className="w-9 h-9" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M7 4 C7 4 3 4 3 10 C3 16 5 20 6 24 C7 28 7 38 10 38 C13 38 13 30 18 30 C23 30 23 38 26 38 C29 38 29 28 30 24 C31 20 33 16 33 10 C33 4 29 4 29 4 C26 4 24 2 18 2 C12 2 10 4 7 4 Z"
+                      fill="white"
+                      stroke="#CBD5E1"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M12 8 C14 6 22 6 24 8"
+                      stroke="#E2E8F0"
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  {/* Sparkles */}
+                  <motion.span
+                    className="absolute text-[10px] leading-none select-none"
+                    style={{ top: -2, right: -1 }}
+                    animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5], rotate: [0, 20, 0] }}
+                    transition={{ duration: 1.4, repeat: Infinity, delay: 0 }}
+                  >✦</motion.span>
+                  <motion.span
+                    className="absolute text-[8px] leading-none select-none"
+                    style={{ top: 3, left: -2 }}
+                    animate={{ opacity: [0, 1, 0], scale: [0.4, 1, 0.4], rotate: [0, -15, 0] }}
+                    transition={{ duration: 1.2, repeat: Infinity, delay: 0.45 }}
+                  >✦</motion.span>
+                  <motion.span
+                    className="absolute text-[7px] leading-none select-none"
+                    style={{ bottom: 4, right: 0 }}
+                    animate={{ opacity: [0, 1, 0], scale: [0.3, 1.1, 0.3] }}
+                    transition={{ duration: 1.6, repeat: Infinity, delay: 0.9 }}
+                  >✦</motion.span>
+                  <motion.span
+                    className="absolute text-[6px] leading-none select-none"
+                    style={{ bottom: 1, left: 1 }}
+                    animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3] }}
+                    transition={{ duration: 1.1, repeat: Infinity, delay: 1.3 }}
+                  >✦</motion.span>
+                </span>
                 <span>Toothbrush Hero</span>
               </h1>
               <p className="text-sm font-semibold text-muted-foreground pl-1">
