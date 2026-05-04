@@ -8,6 +8,7 @@ import {
   getPetHappiness,
   getWeekDays,
 } from '@/lib/store';
+import { PetSprite } from '@/components/pet-sprite';
 
 interface Props {
   kid: Kid;
@@ -366,10 +367,9 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
   }
 
   /* ── Alive ───────────────────────────────────────────────────── */
-  // Walk speed and bounce energy scales with happiness
+  // Walk speed and pace scale with happiness; sprite handles its own body animation
   const walkDuration = hearts > 3 ? 4 : hearts > 1 ? 6 : 10;
-  const bounceDuration = hearts > 3 ? 0.28 : hearts > 1 ? 0.42 : 0.7;
-  const bounceHeight = hearts > 3 ? 9 : hearts > 1 ? 6 : 3;
+  const walkSpeed    = hearts > 3 ? 2.2 : hearts > 1 ? 1.4 : 0.7;
 
   return (
     <div
@@ -395,12 +395,12 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
           style={{ background: `linear-gradient(to top, ${info.color}18, transparent)` }}
         />
 
-        {/* Walking pet — outer handles x + flip, inner handles y bounce */}
+        {/* Walking pet — outer handles x + flip, sprite handles its own animation */}
         <motion.div
           className="absolute"
-          style={{ bottom: 14 }}
+          style={{ bottom: 8 }}
           animate={{
-            x: [-95, 95, 95, -95, -95],
+            x: [-88, 88, 88, -88, -88],
             scaleX: [1, 1, -1, -1, 1],
           }}
           transition={{
@@ -410,18 +410,7 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
             times: [0, 0.45, 0.5, 0.95, 1],
           }}
         >
-          <motion.span
-            className="text-5xl block select-none leading-none"
-            animate={{ y: [0, -bounceHeight, 0] }}
-            transition={{
-              duration: bounceDuration,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-            style={{ filter: `drop-shadow(0 6px 4px ${info.color}55)` }}
-          >
-            {info.emoji}
-          </motion.span>
+          <PetSprite species={pet.species} color={info.color} speed={walkSpeed} />
         </motion.div>
 
         {/* Floating mood bubble */}
