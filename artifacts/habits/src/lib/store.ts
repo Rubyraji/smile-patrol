@@ -49,6 +49,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'flying',   emoji: '🦋', name: 'Flying Adventure',   category: 'exercise', cost: 6,  description: 'Soar through the sky!' },
   // Sleep
   { id: 'nap2',     emoji: '😴', name: 'Quick Nap',           category: 'sleep',    cost: 2,  description: '2 hours of rest!' },
+  { id: 'sleep4',   emoji: '🛌', name: 'Afternoon Snooze',    category: 'sleep',    cost: 3,  description: '4 hours of cosy sleep!' },
   { id: 'sleep6',   emoji: '💤', name: 'Good Sleep',          category: 'sleep',    cost: 4,  description: '6 hours of sweet dreams!' },
   { id: 'sleep8',   emoji: '🌙', name: 'Full Night\'s Sleep', category: 'sleep',    cost: 6,  description: '8 hours all night long!' },
 ];
