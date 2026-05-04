@@ -46,6 +46,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'cheese',     emoji: '🧀', name: 'Cheesy Chunk',      category: 'food',     cost: 4,  description: 'Melty and yummy!' },
   { id: 'egg',        emoji: '🥚', name: 'Scrambled Egg',     category: 'food',     cost: 4,  description: 'Protein-packed breakfast!' },
   { id: 'fish',       emoji: '🐟', name: 'Fresh Fish',        category: 'food',     cost: 4,  description: 'Straight from the sea!' },
+  { id: 'milk',       emoji: '🥛', name: 'Glass of Milk',      category: 'food',     cost: 3,  description: 'Creamy and good for teeth!' },
   { id: 'meat',       emoji: '🍖', name: 'Meaty Bone',        category: 'food',     cost: 5,  description: 'A delicious meaty treat!' },
   // Exercise
   { id: 'walk',     emoji: '🚶', name: 'Short Walk',          category: 'exercise', cost: 3,  description: 'A nice stroll outside!' },
