@@ -107,19 +107,39 @@ export default function Home() {
             <div>
               <h1 className="text-4xl font-black flex items-center gap-2.5 leading-none mb-0.5">
                 <span className="relative inline-flex items-center justify-center w-10 h-10 shrink-0">
-                  {/* Sleek SVG tooth */}
-                  <svg viewBox="0 0 36 42" fill="none" className="w-9 h-9" xmlns="http://www.w3.org/2000/svg">
+                  {/* Molar SVG — wide crown with 4 cusps + two diverging roots */}
+                  <svg viewBox="0 0 48 48" fill="none" className="w-9 h-9" xmlns="http://www.w3.org/2000/svg">
+                    {/* Outer molar shape: wide crown, four cusps on top, two roots */}
                     <path
-                      d="M7 4 C7 4 3 4 3 10 C3 16 5 20 6 24 C7 28 7 38 10 38 C13 38 13 30 18 30 C23 30 23 38 26 38 C29 38 29 28 30 24 C31 20 33 16 33 10 C33 4 29 4 29 4 C26 4 24 2 18 2 C12 2 10 4 7 4 Z"
+                      d="
+                        M7 30 C6 24 6 18 7 14 C8 10 10 7 12 7 C13 6 15 6 16 8 C17 10 18 11 20 11
+                        C22 11 23 10 24 8 C25 6 27 6 28 8 C29 10 30 11 32 11
+                        C34 11 35 10 36 8 C37 6 39 7 40 9 C41 11 42 15 42 18
+                        C42 22 41 26 41 30
+                        L36 30 C36 34 37 38 37 42 C37 44 35 44 34 42 C33 40 32 36 30 32
+                        L28 32 C28 33 26 34 24 34 C22 34 20 33 20 32
+                        L18 32 C16 36 15 40 14 42 C13 44 11 44 11 42 C11 38 12 34 12 30
+                        Z
+                      "
                       fill="white"
                       stroke="#CBD5E1"
                       strokeWidth="1.5"
                       strokeLinejoin="round"
+                      strokeLinecap="round"
                     />
+                    {/* Central occlusal fissure */}
                     <path
-                      d="M12 8 C14 6 22 6 24 8"
-                      stroke="#E2E8F0"
-                      strokeWidth="1.2"
+                      d="M16 20 C18 22 20 21 24 22 C28 23 30 21 32 20"
+                      stroke="#DDE3EC"
+                      strokeWidth="1.1"
+                      strokeLinecap="round"
+                      fill="none"
+                    />
+                    {/* Crown highlight */}
+                    <path
+                      d="M10 13 C12 11 16 11 18 13"
+                      stroke="#F1F5F9"
+                      strokeWidth="1.4"
                       strokeLinecap="round"
                     />
                   </svg>
