@@ -564,6 +564,8 @@ export default function Brush() {
                     teeth={teeth}
                     brushedSurfaces={brushedSurfaces}
                     brushColor={activeKid.color}
+                    primaryOutlineColor={theme.primaryOutline}
+                    permanentOutlineColor={theme.permanentOutline}
                     size={stickerEarned ? 220 : 260}
                   />
                   <div
@@ -652,6 +654,8 @@ export default function Brush() {
                     teeth={teeth}
                     brushedSurfaces={brushedSurfaces}
                     brushColor={activeKid.color}
+                    primaryOutlineColor={theme.primaryOutline}
+                    permanentOutlineColor={theme.permanentOutline}
                     size={260}
                   />
                   <p

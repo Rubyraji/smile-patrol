@@ -15,6 +15,8 @@ type Props = {
   teeth: Tooth[];
   brushedSurfaces?: BrushedMap;
   brushColor?: string;
+  primaryOutlineColor?: string;
+  permanentOutlineColor?: string;
   size?: number;
   onToothClick?: (id: ToothId) => void;
   interactive?: boolean;
@@ -129,6 +131,8 @@ export function DentalArches({
   teeth,
   brushedSurfaces,
   brushColor = 'hsl(var(--primary))',
+  primaryOutlineColor,
+  permanentOutlineColor,
   size = 280,
   onToothClick,
   interactive = false,
@@ -181,6 +185,8 @@ export function DentalArches({
           rot={rot}
           brushed={brushedSurfaces?.get(tooth.id) ?? EMPTY_BRUSHED}
           brushColor={brushColor}
+          primaryOutlineColor={primaryOutlineColor}
+          permanentOutlineColor={permanentOutlineColor}
           interactive={interactive}
           onClick={interactive ? onToothClick : undefined}
           clipIdPrefix={reactId}
@@ -220,6 +226,8 @@ type ToothGlyphProps = {
   rot: number;
   brushed: Set<ToothSurface>;
   brushColor: string;
+  primaryOutlineColor?: string;
+  permanentOutlineColor?: string;
   interactive: boolean;
   onClick?: (id: ToothId) => void;
   clipIdPrefix: string;
@@ -232,6 +240,8 @@ function ToothGlyph({
   rot,
   brushed,
   brushColor,
+  primaryOutlineColor,
+  permanentOutlineColor,
   interactive,
   onClick,
   clipIdPrefix,
@@ -348,10 +358,10 @@ function ToothGlyph({
             fill="none"
             stroke={
               isPrimary
-                ? 'hsl(var(--muted-foreground) / 0.5)'
-                : 'hsl(var(--muted-foreground) / 0.45)'
+                ? (primaryOutlineColor ?? 'hsl(var(--muted-foreground) / 0.5)')
+                : (permanentOutlineColor ?? 'hsl(var(--muted-foreground) / 0.45)')
             }
-            strokeWidth={1.3}
+            strokeWidth={1.5}
           />
           {/* Primary tooth dot indicator */}
           {isPrimary && (

@@ -12,6 +12,8 @@ export type BrushTheme = {
   emoji: string;
   color: string;
   secondaryColor: string;
+  primaryOutline: string;   // outline colour for baby (primary) teeth
+  permanentOutline: string; // outline colour for adult (permanent) teeth
   zones: [BrushThemeZone, BrushThemeZone];
   zoneSwitchMsgs: string[];
   almostDoneMsgs: string[];
@@ -24,6 +26,8 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     emoji: '🦷',
     color: '',         // signals "use kid color"
     secondaryColor: '',
+    primaryOutline:   '#fca5a5', // light red — baby teeth
+    permanentOutline: '#991b1b', // dark red  — adult teeth
     zones: [
       { emoji: '⬆️', label: 'Top teeth',    hint: 'Brush the teeth on top — front and back!' },
       { emoji: '⬇️', label: 'Bottom teeth', hint: 'Now brush the bottom teeth — front and back!' },
@@ -49,6 +53,8 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     emoji: '🚀',
     color: '#1e3a5f',
     secondaryColor: '#2563eb',
+    primaryOutline:   '#93c5fd', // light blue  — baby teeth
+    permanentOutline: '#1e3a5f', // dark navy   — adult teeth
     zones: [
       { emoji: '🌌', label: 'Upper Galaxy', hint: 'Blast through the top teeth — front and back!' },
       { emoji: '🪐', label: 'Lower Galaxy',  hint: 'Launch to the bottom teeth — front and back!' },
@@ -73,6 +79,8 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     emoji: '🌊',
     color: '#0ea5e9',
     secondaryColor: '#0369a1',
+    primaryOutline:   '#7dd3fc', // light sky   — baby teeth
+    permanentOutline: '#0c4a6e', // deep ocean  — adult teeth
     zones: [
       { emoji: '🐠', label: 'Surface Waters', hint: 'Dive through the top teeth — front and back!' },
       { emoji: '🦈', label: 'Deep Ocean',     hint: 'Now dive to the bottom teeth — front and back!' },
@@ -97,6 +105,8 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     emoji: '🌿',
     color: '#22c55e',
     secondaryColor: '#15803d',
+    primaryOutline:   '#86efac', // light green — baby teeth
+    permanentOutline: '#14532d', // dark forest — adult teeth
     zones: [
       { emoji: '🦜', label: 'Treetops',     hint: 'Swing through the top teeth — front and back!' },
       { emoji: '🐊', label: 'Forest Floor', hint: 'Now stomp through the bottom teeth — front and back!' },
@@ -121,6 +131,8 @@ export const BRUSH_THEMES: Record<BrushThemeKey, BrushTheme> = {
     emoji: '🧚',
     color: '#c084fc',
     secondaryColor: '#7c3aed',
+    primaryOutline:   '#e9d5ff', // light lavender — baby teeth
+    permanentOutline: '#6b21a8', // deep violet    — adult teeth
     zones: [
       { emoji: '🌸', label: 'Blossom Arch',    hint: 'Sprinkle fairy dust on the top teeth — front and back!' },
       { emoji: '🦋', label: 'Dewdrop Hollow',  hint: 'Flutter to the bottom teeth — spread the sparkle!' },
