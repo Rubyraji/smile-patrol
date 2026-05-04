@@ -560,33 +560,53 @@ export default function Brush() {
                   exit={{ scale: 0.6, opacity: 0 }}
                   className="flex flex-col items-center"
                 >
-                  <DentalArches
-                    teeth={teeth}
-                    brushedSurfaces={brushedSurfaces}
-                    brushColor={activeKid.color}
-                    primaryOutlineColor={theme.primaryOutline}
-                    permanentOutlineColor={theme.permanentOutline}
-                    size={stickerEarned ? 220 : 260}
-                  />
-                  <div
-                    className={cn(
-                      '-mt-6 w-14 h-14 rounded-full flex items-center justify-center shadow-md',
-                      signoffRequired && !signedOff && 'opacity-70',
-                    )}
-                    style={{ backgroundColor: activeKid.color }}
-                  >
-                    {signoffRequired && !signedOff ? (
-                      <Lock className="h-7 w-7 text-white" strokeWidth={2.5} />
-                    ) : (
-                      <Check className="h-8 w-8 text-white" strokeWidth={3} />
-                    )}
+                  <div className="relative">
+                    <DentalArches
+                      teeth={teeth}
+                      brushedSurfaces={brushedSurfaces}
+                      brushColor={activeKid.color}
+                      primaryOutlineColor={theme.primaryOutline}
+                      permanentOutlineColor={theme.permanentOutline}
+                      size={stickerEarned ? 220 : 260}
+                    />
+                    {/* Overlay centred inside the arch ring */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 320, damping: 18, delay: 0.1 }}
+                        className={cn(
+                          'w-14 h-14 rounded-full flex items-center justify-center shadow-lg',
+                          signoffRequired && !signedOff && 'opacity-70',
+                        )}
+                        style={{ backgroundColor: activeKid.color }}
+                      >
+                        {signoffRequired && !signedOff ? (
+                          <Lock className="h-7 w-7 text-white" strokeWidth={2.5} />
+                        ) : (
+                          <Check className="h-8 w-8 text-white" strokeWidth={3} />
+                        )}
+                      </motion.div>
+                      <motion.p
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25 }}
+                        className="text-base font-black mt-2 drop-shadow-sm"
+                      >
+                        All done!
+                      </motion.p>
+                      <motion.p
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.35 }}
+                        className="text-xs text-muted-foreground font-semibold"
+                      >
+                        {signoffRequired && !signedOff
+                          ? 'Show a parent to confirm.'
+                          : 'Sparkly clean ✨'}
+                      </motion.p>
+                    </div>
                   </div>
-                  <p className="text-lg font-bold mt-1.5">All done!</p>
-                  <p className="text-xs text-muted-foreground">
-                    {signoffRequired && !signedOff
-                      ? 'Show a parent to confirm.'
-                      : 'Sparkly clean ✨'}
-                  </p>
 
                   {/* Pet care item reveal — only for 3-min brush */}
                   {stickerEarned && (() => {
