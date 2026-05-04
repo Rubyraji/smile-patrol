@@ -386,12 +386,15 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
 
     const loop = async () => {
       while (aliveRef.current) {
-        // — enter from left —
+        // — enter from left: fast off the mark, decelerates smoothly to a stop —
         setPetWalking(true);
         walkControls.set({ x: -175, scaleX: 1 });
         await walkControls.start({
           x: 0,
-          transition: { duration: travelMsRef.current / 1000, ease: 'linear' },
+          transition: {
+            duration: travelMsRef.current / 1000,
+            ease: [0.0, 0.0, 0.2, 1.0],   // ease-out cubic
+          },
         });
         if (!aliveRef.current) break;
 
@@ -400,16 +403,19 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
         await sleep(sitMsRef.current);
         if (!aliveRef.current) break;
 
-        // — exit to the right —
+        // — exit to the right: starts slow then accelerates away —
         setPetWalking(true);
         await walkControls.start({
           x: 175,
-          transition: { duration: travelMsRef.current / 1000, ease: 'linear' },
+          transition: {
+            duration: travelMsRef.current / 1000,
+            ease: [0.8, 0.0, 1.0, 1.0],   // ease-in cubic
+          },
         });
         if (!aliveRef.current) break;
 
         // — brief off-screen pause before looping —
-        await sleep(350);
+        await sleep(320);
       }
     };
 
