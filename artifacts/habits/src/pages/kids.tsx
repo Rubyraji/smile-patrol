@@ -403,7 +403,7 @@ function KidEditor({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-5 border-b shrink-0">
-          <h2 className="text-lg font-bold">{kid ? 'Edit kid' : 'New kid'}</h2>
+          <h2 className="text-lg font-bold">{kid ? 'Edit child' : 'New child'}</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition"
