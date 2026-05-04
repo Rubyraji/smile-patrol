@@ -386,36 +386,59 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
 
     const loop = async () => {
       while (aliveRef.current) {
-        // — enter from left: fast off the mark, decelerates smoothly to a stop —
+        // — enter from left —
         setPetWalking(true);
-        walkControls.set({ x: -175, scaleX: 1 });
+        walkControls.set({ x: -175, scaleX: 1, y: 0 });
         await walkControls.start({
           x: 0,
-          transition: {
-            duration: travelMsRef.current / 1000,
-            ease: [0.0, 0.0, 0.2, 1.0],   // ease-out cubic
-          },
+          transition: { duration: travelMsRef.current / 1000, ease: [0.0, 0.0, 0.2, 1.0] },
         });
         if (!aliveRef.current) break;
 
-        // — sit in centre —
+        // — landing settle: squash down then spring back —
+        await walkControls.start({
+          y: [0, 8, -4, 1, 0],
+          transition: { duration: 0.48, ease: 'easeOut' },
+        });
+        walkControls.set({ y: 0 });
+        if (!aliveRef.current) break;
+
+        // — turn to face viewer (flip horizontally) —
+        await walkControls.start({
+          scaleX: -1,
+          transition: { duration: 0.1 },
+        });
+        if (!aliveRef.current) break;
+
+        // — sit —
         setPetWalking(false);
         await sleep(sitMsRef.current);
         if (!aliveRef.current) break;
 
-        // — exit to the right: starts slow then accelerates away —
+        // — turn back to face right before leaving —
         setPetWalking(true);
         await walkControls.start({
-          x: 175,
-          transition: {
-            duration: travelMsRef.current / 1000,
-            ease: [0.8, 0.0, 1.0, 1.0],   // ease-in cubic
-          },
+          scaleX: 1,
+          transition: { duration: 0.1 },
         });
         if (!aliveRef.current) break;
 
-        // — brief off-screen pause before looping —
-        await sleep(320);
+        // — tiny anticipation step back —
+        await walkControls.start({
+          x: -12,
+          transition: { duration: 0.16, ease: 'easeOut' },
+        });
+        if (!aliveRef.current) break;
+
+        // — exit to the right: accelerates away —
+        await walkControls.start({
+          x: 175,
+          transition: { duration: travelMsRef.current / 1000, ease: [0.8, 0.0, 1.0, 1.0] },
+        });
+        if (!aliveRef.current) break;
+
+        // — off-screen pause before looping —
+        await sleep(300);
       }
     };
 

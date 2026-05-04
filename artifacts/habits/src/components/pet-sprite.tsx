@@ -58,6 +58,32 @@ function Leg({
   );
 }
 
+/**
+ * Ground shadow that moves INVERSE to the body bob.
+ * Body up → shadow small/faint. Body down → shadow larger/darker.
+ */
+function Shadow({ cx, cy, rx, walking, p }: {
+  cx: number; cy: number; rx: number; walking: boolean; p: number;
+}) {
+  return (
+    <motion.ellipse
+      cx={cx} cy={cy} rx={rx} ry={3}
+      fill="rgba(0,0,0,0.1)"
+      style={{ transformOrigin: `${cx}px ${cy}px` }}
+      animate={walking
+        ? { scaleX: [1, 1.12, 0.65, 1.12, 1], opacity: [0.9, 1.1, 0.38, 1.1, 0.9] }
+        : { scaleX: [1, 0.88, 1],              opacity: [0.9, 0.62, 0.9] }
+      }
+      transition={{
+        duration: walking ? p : 2,
+        times: walking ? [0, 0.18, 0.5, 0.82, 1] : [0, 0.5, 1],
+        repeat: Infinity,
+        ease: 'easeInOut' as Easing,
+      }}
+    />
+  );
+}
+
 // Natural quadruped body bob: slight dip on footfall → rise at mid-stride
 const quadBob = (walking: boolean, p: number) => ({
   animate: { y: walking ? [0, 1.5, -4, 1.5, 0] : [0, -1.5, 0] },
@@ -77,14 +103,7 @@ function CatSprite({ color, speed, walking }: SpriteProps) {
   const bob = quadBob(walking, p);
   return (
     <svg viewBox="0 0 90 74" width="90" height="74" overflow="visible">
-      {/* Ground shadow */}
-      <motion.ellipse
-        cx="40" cy="68" rx="24" ry="3"
-        fill="rgba(0,0,0,0.09)"
-        animate={bob.animate}
-        transition={bob.transition}
-        style={{ scaleY: -1 }} // shadow stays down while body rises
-      />
+      <Shadow cx={40} cy={69} rx={24} walking={walking} p={p} />
 
       {/* Body sway — side-to-side lean at stride frequency */}
       <motion.g
@@ -177,9 +196,7 @@ function DogSprite({ color, speed, walking }: SpriteProps) {
   const bob = quadBob(walking, p);
   return (
     <svg viewBox="0 0 90 74" width="90" height="74" overflow="visible">
-      <motion.ellipse cx="42" cy="68" rx="26" ry="3" fill="rgba(0,0,0,0.09)"
-        animate={bob.animate} transition={bob.transition} style={{ scaleY: -1 }}
-      />
+      <Shadow cx={42} cy={69} rx={26} walking={walking} p={p} />
 
       <motion.g
         style={{ transformOrigin: '40px 50px' }}
@@ -210,20 +227,16 @@ function DogSprite({ color, speed, walking }: SpriteProps) {
           <circle cx="57" cy="25" r="14" fill={color} />
           <ellipse cx="60" cy="19" rx="7" ry="4.5" fill="rgba(255,255,255,0.2)" />
 
-          {/* Floppy ears — swing with stride, flap more when sitting */}
-          <motion.path
-            d="M 46 18 Q 40 24 42 36 Q 44 40 46 36 Q 44 26 48 20 Z"
-            fill={`${color}cc`}
-            style={{ transformOrigin: '47px 18px' }}
-            animate={{ rotate: walking ? [-6, 6, -6] : [-14, 14, -14] }}
-            transition={{ duration: walking ? p * 1.3 : 0.65, repeat: Infinity, ease: 'easeInOut' }}
+          {/* Floppy ears — rotated ellipses, swing with stride, flap more when sitting */}
+          <motion.ellipse cx="47" cy="29" rx="5" ry="10" fill={`${color}cc`}
+            transform="rotate(-15 47 20)" style={{ transformOrigin: '47px 20px' }}
+            animate={{ rotate: walking ? [-6, 6, -6] : [-16, 16, -16] }}
+            transition={{ duration: walking ? p * 1.3 : 0.6, repeat: Infinity, ease: 'easeInOut' }}
           />
-          <motion.path
-            d="M 68 18 Q 74 24 72 36 Q 70 40 68 36 Q 70 26 66 20 Z"
-            fill={`${color}cc`}
-            style={{ transformOrigin: '67px 18px' }}
-            animate={{ rotate: walking ? [6, -6, 6] : [14, -14, 14] }}
-            transition={{ duration: walking ? p * 1.3 : 0.65, repeat: Infinity, ease: 'easeInOut' }}
+          <motion.ellipse cx="67" cy="29" rx="5" ry="10" fill={`${color}cc`}
+            transform="rotate(15 67 20)" style={{ transformOrigin: '67px 20px' }}
+            animate={{ rotate: walking ? [6, -6, 6] : [16, -16, 16] }}
+            transition={{ duration: walking ? p * 1.3 : 0.6, repeat: Infinity, ease: 'easeInOut' }}
           />
 
           <circle cx="52" cy="22" r="4.5" fill="#1a1a2e" />
@@ -234,14 +247,10 @@ function DogSprite({ color, speed, walking }: SpriteProps) {
           <ellipse cx="57" cy="28" rx="3.5" ry="2.5" fill="rgba(60,30,10,0.7)" />
           <line x1="57" y1="30.5" x2="57" y2="34" stroke="rgba(60,30,10,0.45)" strokeWidth="1.5" strokeLinecap="round" />
 
-          <motion.path
-            d="M 53 34 Q 57 39 61 34"
-            stroke="none" fill="rgba(230,80,100,0.9)"
-            animate={{ d: walking
-              ? ['M 53 34 Q 57 38 61 34', 'M 53 34 Q 57 40 61 34', 'M 53 34 Q 57 38 61 34']
-              : ['M 53 34 Q 57 40 61 34', 'M 53 34 Q 57 43 61 34', 'M 53 34 Q 57 40 61 34']
-            }}
-            transition={{ duration: walking ? p * 1.5 : 0.7, repeat: Infinity }}
+          <motion.ellipse cx="57" cy="36" rx="3.5" ry="3" fill="rgba(230,80,100,0.9)"
+            style={{ transformOrigin: '57px 36px' }}
+            animate={{ scaleY: walking ? [1, 1.2, 1] : [1, 1.6, 1] }}
+            transition={{ duration: walking ? p * 1.2 : 0.6, repeat: Infinity }}
           />
         </motion.g>
       </motion.g>
@@ -339,9 +348,7 @@ function DinoSprite({ color, speed, walking }: SpriteProps) {
   const bob = quadBob(walking, p);
   return (
     <svg viewBox="0 0 90 78" width="90" height="78" overflow="visible">
-      <motion.ellipse cx="40" cy="72" rx="26" ry="3" fill="rgba(0,0,0,0.09)"
-        animate={bob.animate} transition={bob.transition} style={{ scaleY: -1 }}
-      />
+      <Shadow cx={40} cy={73} rx={26} walking={walking} p={p} />
 
       <motion.g
         style={{ transformOrigin: '40px 52px' }}
@@ -407,9 +414,7 @@ function UnicornSprite({ color, speed, walking }: SpriteProps) {
   const bob = quadBob(walking, p);
   return (
     <svg viewBox="0 0 92 74" width="92" height="74" overflow="visible">
-      <motion.ellipse cx="40" cy="68" rx="27" ry="3" fill="rgba(0,0,0,0.08)"
-        animate={bob.animate} transition={bob.transition} style={{ scaleY: -1 }}
-      />
+      <Shadow cx={40} cy={69} rx={27} walking={walking} p={p} />
 
       <motion.g
         style={{ transformOrigin: '40px 50px' }}
