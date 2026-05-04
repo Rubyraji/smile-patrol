@@ -847,20 +847,21 @@ export function getWeekStartKey(date: Date = new Date()): string {
 }
 
 /**
- * Returns a 0–5 heart count for the kid's virtual pet based on brushing
- * compliance in the given week. Loses 1 heart per missed session (max 5).
+ * Returns a 0–5 happiness value (may be fractional) for the kid's virtual pet.
+ * Each heart is worth 5 shop purchases this week. A partial heart (any remainder)
+ * displays as a half-full heart on the card.
  */
 export function getPetHappiness(kid: Kid, weekDays: Date[]): number {
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
   const todayStr  = format(new Date(), 'yyyy-MM-dd');
 
-  // Each shop purchase this week fills one heart (up to 5)
   const purchasesThisWeek = (kid.purchases ?? []).filter((p) => {
     const d = p.purchasedAt.slice(0, 10);
     return d >= weekStart && d <= todayStr;
   }).length;
 
-  return Math.min(5, purchasesThisWeek);
+  // 5 purchases = 1 full heart; returns float so partial hearts can be shown
+  return Math.min(5, purchasesThisWeek / 5);
 }
 
 export function getWeekReward(kid: Kid, weekStartKey: string): Reward | undefined {

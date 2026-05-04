@@ -413,20 +413,29 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
 
           {/* Health hearts */}
           <div className="flex gap-0.5 mt-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <motion.span
-                key={i}
-                initial={{ scale: 0.6 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: i * 0.05, type: 'spring', stiffness: 300 }}
-                className="text-lg leading-none"
-              >
-                {i < hearts ? '❤️' : '🤍'}
-              </motion.span>
-            ))}
+            {Array.from({ length: 5 }).map((_, i) => {
+              const full  = i < Math.floor(hearts);
+              const half  = !full && i === Math.floor(hearts) && (hearts % 1) > 0;
+              return (
+                <motion.span
+                  key={i}
+                  initial={{ scale: 0.6 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: i * 0.05, type: 'spring', stiffness: 300 }}
+                  className="text-lg leading-none relative inline-block"
+                >
+                  {full ? '❤️' : half ? (
+                    <span className="relative inline-block w-[1.25rem] h-[1.25rem]">
+                      <span className="absolute inset-0">🤍</span>
+                      <span className="absolute inset-0 overflow-hidden" style={{ width: '55%' }}>❤️</span>
+                    </span>
+                  ) : '🤍'}
+                </motion.span>
+              );
+            })}
           </div>
 
-          {hearts <= 2 && (
+          {hearts < 1 && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -434,10 +443,8 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
               style={{ color: info.color }}
             >
               {hearts === 0
-                ? '😰 Needs brushing urgently!'
-                : hearts === 1
-                  ? '⚠️ Very hungry — brush more!'
-                  : '⚠️ Brush more to keep them happy!'}
+                ? '😰 Needs care — visit the shop!'
+                : '⚠️ A little hungry — buy more treats!'}
             </motion.p>
           )}
         </div>
