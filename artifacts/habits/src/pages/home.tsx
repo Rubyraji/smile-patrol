@@ -107,30 +107,31 @@ export default function Home() {
             <div>
               <h1 className="text-4xl font-black flex items-center gap-2.5 leading-none mb-0.5">
                 <span className="relative inline-flex items-center justify-center w-10 h-10 shrink-0">
-                  {/* Molar SVG — wide crown + 2 clear cusps + 2 separate diverging roots */}
-                  <svg viewBox="0 0 48 46" fill="none" className="w-10 h-9" xmlns="http://www.w3.org/2000/svg">
-                    {/* Two roots — drawn first so crown sits on top */}
+                  {/* Molar SVG — 3 rounded cusps, neck constriction, 2 long diverging roots */}
+                  <svg viewBox="0 0 48 50" fill="none" className="w-9 h-10" xmlns="http://www.w3.org/2000/svg">
+                    {/* Left root — drawn first, crown overlaps the top */}
                     <path
-                      d="M6 25 C5 30 5 35 6 40 C7 43 9 44 12 44 C15 44 17 43 18 40 C19 35 18 30 18 25 Z"
+                      d="M7 26 C6 31 5 37 6 42 C7 45 9 47 12 47 C15 47 17 45 17 42 C18 37 17 31 17 27 Z"
                       fill="white" stroke="#CBD5E1" strokeWidth="1.5" strokeLinejoin="round"
                     />
+                    {/* Right root */}
                     <path
-                      d="M29 25 C28 30 28 35 29 40 C30 43 32 44 35 44 C38 44 40 43 41 40 C42 35 42 30 41 25 Z"
+                      d="M30 26 C30 27 30 31 30 37 C30 42 32 46 35 47 C38 47 40 45 41 42 C42 37 42 31 41 26 Z"
                       fill="white" stroke="#CBD5E1" strokeWidth="1.5" strokeLinejoin="round"
                     />
-                    {/* Wide crown with two prominent cusps */}
+                    {/* Crown — wide body, 3 rounded bumps on top, slight cervical constriction at base */}
                     <path
-                      d="M5 26 L5 22 C5 17 8 14 11 11 C12 10 13 9 15 8 C17 9 19 12 22 13 C25 12 27 9 29 8 C31 7 33 9 36 11 C39 13 42 17 43 22 L43 26 Z"
+                      d="M6 27 L6 22 C6 17 8 14 10 11 C11 10 12 9 14 9 C16 9 17 12 18 13 C19 12 21 8 24 8 C27 8 29 12 30 13 C31 13 33 9 36 9 C38 9 40 12 42 22 L42 27 Z"
                       fill="white" stroke="#CBD5E1" strokeWidth="1.5" strokeLinejoin="round"
                     />
-                    {/* Occlusal groove */}
+                    {/* Occlusal fissure groove */}
                     <path
-                      d="M15 18 C18 21 20 20 22 20 C24 20 26 19 29 18"
+                      d="M14 19 C18 22 21 21 24 20 C27 19 30 22 36 20"
                       stroke="#DDE3EC" strokeWidth="1.1" strokeLinecap="round" fill="none"
                     />
-                    {/* Crown highlight */}
+                    {/* Crown highlight sheen */}
                     <path
-                      d="M10 14 C12 12 16 12 18 14"
+                      d="M9 14 C11 12 15 12 17 14"
                       stroke="#F1F5F9" strokeWidth="1.4" strokeLinecap="round"
                     />
                   </svg>
