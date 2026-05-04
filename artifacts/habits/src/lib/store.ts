@@ -38,10 +38,15 @@ export type ShopItem = {
 
 export const SHOP_ITEMS: ShopItem[] = [
   // Food
-  { id: 'carrot',   emoji: '🥕', name: 'Carrot Crunch',     category: 'food',     cost: 3,  description: 'Crunchy and healthy!' },
-  { id: 'meat',     emoji: '🍖', name: 'Meaty Bone',         category: 'food',     cost: 5,  description: 'A delicious meaty treat!' },
-  { id: 'egg',      emoji: '🥚', name: 'Scrambled Egg',      category: 'food',     cost: 4,  description: 'Protein-packed breakfast!' },
-  { id: 'water',    emoji: '💧', name: 'Fresh Water',         category: 'food',     cost: 2,  description: 'Cool and refreshing!' },
+  { id: 'water',      emoji: '💧', name: 'Fresh Water',       category: 'food',     cost: 2,  description: 'Cool and refreshing!' },
+  { id: 'carrot',     emoji: '🥕', name: 'Carrot Crunch',     category: 'food',     cost: 3,  description: 'Crunchy and healthy!' },
+  { id: 'apple',      emoji: '🍎', name: 'Juicy Apple',       category: 'food',     cost: 3,  description: 'Sweet and crisp!' },
+  { id: 'strawberry', emoji: '🍓', name: 'Strawberry Treat',  category: 'food',     cost: 3,  description: 'Red and delicious!' },
+  { id: 'seaweed',    emoji: '🌿', name: 'Seaweed Snack',     category: 'food',     cost: 3,  description: 'Ocean-fresh and salty!' },
+  { id: 'cheese',     emoji: '🧀', name: 'Cheesy Chunk',      category: 'food',     cost: 4,  description: 'Melty and yummy!' },
+  { id: 'egg',        emoji: '🥚', name: 'Scrambled Egg',     category: 'food',     cost: 4,  description: 'Protein-packed breakfast!' },
+  { id: 'fish',       emoji: '🐟', name: 'Fresh Fish',        category: 'food',     cost: 4,  description: 'Straight from the sea!' },
+  { id: 'meat',       emoji: '🍖', name: 'Meaty Bone',        category: 'food',     cost: 5,  description: 'A delicious meaty treat!' },
   // Exercise
   { id: 'walk',     emoji: '🚶', name: 'Short Walk',          category: 'exercise', cost: 3,  description: 'A nice stroll outside!' },
   { id: 'fetch',    emoji: '🎾', name: 'Fetch!',              category: 'exercise', cost: 4,  description: 'Throw and run!' },
