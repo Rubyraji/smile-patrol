@@ -140,6 +140,7 @@ export type Kid = {
   brushStickers: BrushSticker[]; // earned by completing a 3-minute brush
   pet: Pet | null;               // virtual pet; null until first assigned
   purchases: ShopPurchase[];     // items bought from pet shop
+  requireSignoff: boolean;       // whether a parent PIN is required after each brush
 };
 
 export const TASK_PRESETS: Array<{ name: string; emoji: string; time: TaskTime }> = [
@@ -393,6 +394,7 @@ function seedKids(): Kid[] {
       },
       brushStickers: [],
       purchases: [],
+      requireSignoff: false,
       pet: {
         species: 'cat',
         name: 'Whiskers',
@@ -417,6 +419,7 @@ function seedKids(): Kid[] {
       taskCompletions: {},
       brushStickers: [],
       purchases: [],
+      requireSignoff: false,
       pet: {
         species: 'dino',
         name: '',
@@ -451,6 +454,7 @@ function migrate(
     brushStickers: kid.brushStickers ?? [],
     pet: (kid.pet as Pet | undefined) ?? null,
     purchases: (kid as Partial<Kid>).purchases ?? [],
+    requireSignoff: !!(kid as Partial<Kid>).requireSignoff,
   };
 }
 
@@ -539,6 +543,7 @@ export function useKids() {
           brushStickers: [],
           purchases: [],
           pet: null,
+          requireSignoff: false,
         };
         return [...prev, newKid];
       });
@@ -555,7 +560,7 @@ export function useKids() {
   const updateKid = useCallback(
     (
       id: string,
-      updates: Partial<Pick<Kid, 'name' | 'emoji' | 'color' | 'age' | 'missingTeeth'>>,
+      updates: Partial<Pick<Kid, 'name' | 'emoji' | 'color' | 'age' | 'missingTeeth' | 'requireSignoff'>>,
     ) => {
       const sanitised = { ...updates };
       if (typeof sanitised.name === 'string') sanitised.name = sanitizeName(sanitised.name) || 'Kiddo';

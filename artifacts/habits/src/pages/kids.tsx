@@ -49,9 +49,7 @@ export default function Kids() {
     updateTask,
     removeTask,
     parentPin,
-    requireParentSignoff,
     setParentPin,
-    setRequireParentSignoff,
   } = useKids();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -68,14 +66,13 @@ export default function Kids() {
 
   const editing = editingId ? kids.find((k) => k.id === editingId) ?? null : null;
 
-  const openSetPin = (alsoEnable: boolean) => {
+  const openSetPin = () => {
     setPinPad({
       mode: 'set',
       title: 'Set parent PIN',
-      subtitle: 'Pick a 4-digit PIN. You\'ll enter it after each brush.',
+      subtitle: "Pick a 4-digit PIN. Enable sign-off per child in their edit panel.",
       onSuccess: (pin) => {
         setParentPin(pin);
-        if (alsoEnable) setRequireParentSignoff(true);
       },
     });
   };
@@ -86,19 +83,6 @@ export default function Kids() {
       title: 'Change parent PIN',
       onSuccess: (pin) => setParentPin(pin),
     });
-  };
-
-  const handleToggleSignoff = (val: boolean) => {
-    if (val) {
-      if (parentPin) {
-        setRequireParentSignoff(true);
-      } else {
-        // No PIN yet — kick off the set-PIN flow and turn on after success.
-        openSetPin(true);
-      }
-    } else {
-      setRequireParentSignoff(false);
-    }
   };
 
   const confirmRemovePin = () => {
@@ -160,35 +144,25 @@ export default function Kids() {
           <span className="font-semibold">Add a kid</span>
         </button>
 
-        {/* Parent sign-off — global setting */}
+        {/* Parent PIN — global (sign-off is toggled per kid) */}
         <section
           className="rounded-2xl bg-card border p-4 mt-6"
           data-testid="parent-signoff-card"
         >
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <span className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                <Lock className="h-5 w-5 text-muted-foreground" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm">Parent sign-off</p>
-                <p className="text-xs text-muted-foreground leading-snug mt-0.5">
-                  {requireParentSignoff
-                    ? "On — I'll ask for your PIN at the end of each brush before logging it."
-                    : parentPin
-                      ? 'Off — turn on to require your PIN before logging a brush.'
-                      : 'Optional — set a 4-digit PIN to confirm brushing yourself.'}
-                </p>
-              </div>
+          <div className="flex items-start gap-3 mb-3">
+            <span className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+              <Lock className="h-5 w-5 text-muted-foreground" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm">Parent PIN</p>
+              <p className="text-xs text-muted-foreground leading-snug mt-0.5">
+                {parentPin
+                  ? 'PIN is set. Turn on sign-off per child inside their edit panel.'
+                  : 'Set a 4-digit PIN, then enable sign-off inside each child\'s settings.'}
+              </p>
             </div>
-            <Switch
-              checked={requireParentSignoff}
-              onCheckedChange={handleToggleSignoff}
-              aria-label="Require parent PIN at end of brushing"
-              data-testid="parent-signoff-switch"
-            />
           </div>
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2">
             {parentPin ? (
               <>
                 <Button
@@ -218,7 +192,7 @@ export default function Kids() {
                 variant="outline"
                 size="sm"
                 className="w-full rounded-xl h-9"
-                onClick={() => openSetPin(false)}
+                onClick={() => openSetPin()}
                 data-testid="set-pin-button"
               >
                 Set PIN
@@ -231,6 +205,7 @@ export default function Kids() {
       {(editing || adding) && (
         <KidEditor
           kid={editing}
+          parentPin={parentPin}
           onClose={() => {
             setEditingId(null);
             setAdding(false);
@@ -248,6 +223,7 @@ export default function Kids() {
           onRemoveTask={(taskId) => editing && removeTask(editing.id, taskId)}
           onToggleTooth={(toothId) => editing && toggleMissingTooth(editing.id, toothId)}
           onResetTeeth={() => editing && resetMissingTeeth(editing.id)}
+          onToggleSignoff={(val) => editing && updateKid(editing.id, { requireSignoff: val })}
           onDelete={
             editing
               ? () => {
@@ -347,6 +323,7 @@ export default function Kids() {
 
 function KidEditor({
   kid,
+  parentPin,
   onClose,
   onSaveProfile,
   onAddTask,
@@ -354,9 +331,11 @@ function KidEditor({
   onRemoveTask,
   onToggleTooth,
   onResetTeeth,
+  onToggleSignoff,
   onDelete,
 }: {
   kid: Kid | null;
+  parentPin: string | null;
   onClose: () => void;
   onSaveProfile: (name: string, emoji: string, color: string, age: number) => void;
   onAddTask: (name: string, emoji: string, time?: TaskTime) => void;
@@ -364,6 +343,7 @@ function KidEditor({
   onRemoveTask: (taskId: string) => void;
   onToggleTooth: (toothId: ToothId) => void;
   onResetTeeth: () => void;
+  onToggleSignoff: (val: boolean) => void;
   onDelete?: () => void;
 }) {
   const initialEmoji = kid?.emoji ?? KID_EMOJIS[0];
@@ -800,6 +780,34 @@ function KidEditor({
                     Custom task
                   </button>
                 )}
+              </div>
+
+              {/* Parent sign-off toggle — per kid */}
+              <div className="pt-4 border-t mt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <span className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                      <Lock className="h-5 w-5 text-muted-foreground" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold leading-tight">Require parent sign-off</p>
+                      <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                        {!parentPin
+                          ? 'Set a parent PIN first (see the PIN section below).'
+                          : kid.requireSignoff
+                            ? 'On — a PIN is needed after each brush.'
+                            : 'Off — brushes log without a PIN.'}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={!!kid.requireSignoff}
+                    onCheckedChange={onToggleSignoff}
+                    disabled={!parentPin}
+                    aria-label={`Require parent sign-off for ${kid.name}`}
+                    data-testid="per-kid-signoff-switch"
+                  />
+                </div>
               </div>
             </div>
           )}

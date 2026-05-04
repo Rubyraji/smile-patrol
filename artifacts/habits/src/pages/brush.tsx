@@ -46,7 +46,6 @@ export default function Brush() {
     activeKid,
     setSession: persistSession,
     parentPin,
-    requireParentSignoff,
     setParentPin,
     awardBrushSticker,
   } = useKids();
@@ -68,7 +67,7 @@ export default function Brush() {
     activeKid?.pet != null && !activeKid.pet.hatched,
   );
 
-  const signoffRequired = requireParentSignoff && !!parentPin;
+  const signoffRequired = !!activeKid?.requireSignoff && !!parentPin;
 
   // ── Theme ─────────────────────────────────────────────────────────────────
   const [themeKey, setThemeKey] = useState<BrushThemeKey>(() => {
