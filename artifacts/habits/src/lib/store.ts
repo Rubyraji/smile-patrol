@@ -851,25 +851,16 @@ export function getWeekStartKey(date: Date = new Date()): string {
  * compliance in the given week. Loses 1 heart per missed session (max 5).
  */
 export function getPetHappiness(kid: Kid, weekDays: Date[]): number {
-  // Up to 3 hearts from brushing (14 sessions = full 3)
-  const brushCount  = countWeekBrushings(kid, weekDays);
-  const brushHearts = Math.round((brushCount / 14) * 3);
-
-  // Up to 2 bonus hearts from shop purchases this week
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
   const todayStr  = format(new Date(), 'yyyy-MM-dd');
-  const thisWeek  = (kid.purchases ?? []).filter((p) => {
+
+  // Each shop purchase this week fills one heart (up to 5)
+  const purchasesThisWeek = (kid.purchases ?? []).filter((p) => {
     const d = p.purchasedAt.slice(0, 10);
     return d >= weekStart && d <= todayStr;
-  });
-  const hasFed      = thisWeek.some((p) => SHOP_ITEMS.find((i) => i.id === p.itemId)?.category === 'food');
-  const hasCared    = thisWeek.some((p) => {
-    const cat = SHOP_ITEMS.find((i) => i.id === p.itemId)?.category;
-    return cat === 'exercise' || cat === 'sleep';
-  });
-  const shopBonus   = (hasFed ? 1 : 0) + (hasCared ? 1 : 0);
+  }).length;
 
-  return Math.min(5, brushHearts + shopBonus);
+  return Math.min(5, purchasesThisWeek);
 }
 
 export function getWeekReward(kid: Kid, weekStartKey: string): Reward | undefined {
