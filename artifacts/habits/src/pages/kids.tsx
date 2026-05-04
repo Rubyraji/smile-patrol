@@ -634,8 +634,16 @@ function KidEditor({
               </p>
 
               {/* Quick on/off toggles for the most common extras */}
-              <div className="space-y-2 mb-4">
-                {QUICK_TOGGLE_PRESETS.map((preset) => {
+              <div className="space-y-4 mb-4">
+                {['Dental extras', 'Pet care'].map((section) => {
+                  const sectionPresets = QUICK_TOGGLE_PRESETS.filter((p) => p.section === section);
+                  return (
+                    <div key={section}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+                        {section === 'Pet care' ? '🐾 ' : '🦷 '}{section}
+                      </p>
+                      <div className="space-y-2">
+                        {sectionPresets.map((preset) => {
                   const existing = findTaskByName(preset.name);
                   const enabled = !!existing;
                   return (
@@ -670,6 +678,10 @@ function KidEditor({
                         aria-label={preset.title}
                         data-testid={`quick-toggle-switch-${preset.key}`}
                       />
+                    </div>
+                  );
+                        })}
+                      </div>
                     </div>
                   );
                 })}

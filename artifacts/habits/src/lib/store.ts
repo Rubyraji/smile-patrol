@@ -115,6 +115,7 @@ export const QUICK_TOGGLE_PRESETS: Array<{
   time: TaskTime;
   title: string;
   subtitle: string;
+  section?: string;
 }> = [
   {
     key: 'floss',
@@ -123,6 +124,7 @@ export const QUICK_TOGGLE_PRESETS: Array<{
     time: 'anytime',
     title: 'Track flossing',
     subtitle: 'Adds a daily floss check to the Today list.',
+    section: 'Dental extras',
   },
   {
     key: 'tooth-cream',
@@ -131,6 +133,34 @@ export const QUICK_TOGGLE_PRESETS: Array<{
     time: 'anytime',
     title: 'Track tooth cream',
     subtitle: 'Adds a daily tooth cream step right after flossing.',
+    section: 'Dental extras',
+  },
+  {
+    key: 'pet-feed',
+    name: 'Feed your pet',
+    emoji: '🍖',
+    time: 'anytime',
+    title: 'Feed your pet',
+    subtitle: 'Remind them to give their pet a meal. Earns 3 pts 🐾',
+    section: 'Pet care',
+  },
+  {
+    key: 'pet-exercise',
+    name: 'Exercise your pet',
+    emoji: '🏃',
+    time: 'anytime',
+    title: 'Exercise your pet',
+    subtitle: 'A walk or playtime session. Earns 3 pts 🐾',
+    section: 'Pet care',
+  },
+  {
+    key: 'pet-sleep',
+    name: "Pet's bedtime",
+    emoji: '💤',
+    time: 'night',
+    title: "Pet's bedtime routine",
+    subtitle: 'Tuck in the pet before lights out. Earns 3 pts 🐾',
+    section: 'Pet care',
   },
 ];
 
@@ -835,13 +865,18 @@ export function getStreak(kid: Kid): number {
 // ── Points system ─────────────────────────────────────────────────────────────
 
 export const POINT_VALUES = {
-  brush:      5,   // per brushing session (any duration)
-  bonus3min:  5,   // extra when a 3-min brush sticker exists for that session
-  floss:      3,
-  toothCream: 3,
-  task:       2,   // any other task
-  perfectDay: 5,   // all sessions + all tasks done on the same day
+  brush:       5,   // per brushing session (any duration)
+  bonus3min:   5,   // extra when a 3-min brush sticker exists for that session
+  floss:       3,
+  toothCream:  3,
+  petFood:     3,   // feed your pet task
+  petExercise: 3,   // exercise your pet task
+  petSleep:    3,   // pet's bedtime task
+  task:        2,   // any other task
+  perfectDay:  5,   // all sessions + all tasks done on the same day
 } as const;
+
+export const PET_CARE_TASK_NAMES = ["Feed your pet", "Exercise your pet", "Pet's bedtime"] as const;
 
 export type DayPoints = {
   brushPoints:  number;
@@ -868,9 +903,12 @@ export function getPointsForDate(kid: Kid, dateStr: string): DayPoints {
   for (const task of kid.tasks) {
     if (kid.taskCompletions[task.id]?.[dateStr]) {
       tasksDone++;
-      if (task.name === 'Floss')        taskPoints += POINT_VALUES.floss;
-      else if (task.name === 'Tooth cream') taskPoints += POINT_VALUES.toothCream;
-      else                              taskPoints += POINT_VALUES.task;
+      if      (task.name === 'Floss')            taskPoints += POINT_VALUES.floss;
+      else if (task.name === 'Tooth cream')      taskPoints += POINT_VALUES.toothCream;
+      else if (task.name === 'Feed your pet')    taskPoints += POINT_VALUES.petFood;
+      else if (task.name === 'Exercise your pet') taskPoints += POINT_VALUES.petExercise;
+      else if (task.name === "Pet's bedtime")    taskPoints += POINT_VALUES.petSleep;
+      else                                       taskPoints += POINT_VALUES.task;
     }
   }
 

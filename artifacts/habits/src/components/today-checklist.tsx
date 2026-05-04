@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import { Check, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { type Kid, POINT_VALUES } from '@/lib/store';
+import { type Kid, POINT_VALUES, PET_CARE_TASK_NAMES } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
 type Goal = {
@@ -40,15 +40,23 @@ export function TodayChecklist({ kid, onToggleTask }: Props) {
   const nightTasks = kid.tasks.filter((t) => t.time === 'night');
 
   const taskPts = (name: string) =>
-    name === 'Floss' ? POINT_VALUES.floss
-    : name === 'Tooth cream' ? POINT_VALUES.toothCream
+    name === 'Floss'             ? POINT_VALUES.floss
+    : name === 'Tooth cream'     ? POINT_VALUES.toothCream
+    : name === 'Feed your pet'   ? POINT_VALUES.petFood
+    : name === 'Exercise your pet' ? POINT_VALUES.petExercise
+    : name === "Pet's bedtime"   ? POINT_VALUES.petSleep
     : POINT_VALUES.task;
+
+  const isPetTask = (name: string) =>
+    (PET_CARE_TASK_NAMES as readonly string[]).includes(name);
 
   const taskToGoal = (t: (typeof kid.tasks)[number], hint: string): Goal => ({
     id: `task-${t.id}`,
     emoji: t.emoji,
     label: t.name,
-    hint: `${hint} · ${taskPts(t.name)} pts`,
+    hint: isPetTask(t.name)
+      ? `${hint} · ${taskPts(t.name)} pts 🐾`
+      : `${hint} · ${taskPts(t.name)} pts`,
     done: !!kid.taskCompletions[t.id]?.[today],
     kind: 'task',
   });
