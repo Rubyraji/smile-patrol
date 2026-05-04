@@ -1,8 +1,10 @@
 import { Link, useLocation } from 'wouter';
-import { Home as HomeIcon, Timer, Users, Settings, LayoutDashboard } from 'lucide-react';
+import { Home as HomeIcon, Timer, Users, Settings, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useKidsContext as useKids } from '@/lib/kids-context';
+import { getSpendablePoints } from '@/lib/store';
 
-const items = [
+const NAV_ITEMS = [
   {
     href: '/',
     label: 'Home',
@@ -16,10 +18,11 @@ const items = [
     match: (p: string) => p === '/brush',
   },
   {
-    href: '/family',
-    label: 'Family',
-    icon: LayoutDashboard,
-    match: (p: string) => p === '/family',
+    href: '/shop',
+    label: 'Pet Shop',
+    icon: ShoppingBag,
+    match: (p: string) => p === '/shop',
+    showBadge: true,
   },
   {
     href: '/kids',
@@ -37,6 +40,8 @@ const items = [
 
 export function BottomNav() {
   const [location] = useLocation();
+  const { activeKid } = useKids();
+  const spendable = activeKid ? getSpendablePoints(activeKid) : 0;
 
   if (location === '/brush') return null;
 
@@ -50,20 +55,20 @@ export function BottomNav() {
           className="bg-card rounded-3xl border shadow-md flex items-stretch justify-around px-1 h-[62px]"
           style={{ boxShadow: '0 4px 20px rgba(80,60,140,0.12)' }}
         >
-          {items.map((item) => {
+          {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = item.match(location);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                data-testid={`nav-${item.label.toLowerCase()}`}
-                className="flex flex-col items-center justify-center flex-1 gap-0.5 py-1.5 transition-opacity active:opacity-70"
+                data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                className="flex flex-col items-center justify-center flex-1 gap-0.5 py-1.5 transition-opacity active:opacity-70 relative"
                 aria-label={item.label}
               >
                 <div
                   className={cn(
-                    'w-11 h-8 rounded-2xl flex items-center justify-center transition-all duration-200',
+                    'w-11 h-8 rounded-2xl flex items-center justify-center transition-all duration-200 relative',
                     active
                       ? 'bg-primary/15 scale-105'
                       : 'scale-100',
@@ -76,10 +81,15 @@ export function BottomNav() {
                     )}
                     strokeWidth={active ? 2.5 : 2}
                   />
+                  {item.showBadge && spendable > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-amber-400 text-white text-[10px] font-black flex items-center justify-center px-1 leading-none shadow-sm">
+                      {spendable > 99 ? '99+' : spendable}
+                    </span>
+                  )}
                 </div>
                 <span
                   className={cn(
-                    'text-[11px] font-bold leading-none transition-colors duration-200',
+                    'text-[10px] font-bold leading-none transition-colors duration-200',
                     active ? 'text-primary' : 'text-muted-foreground/60',
                   )}
                 >

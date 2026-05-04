@@ -13,6 +13,7 @@ import Brush from '@/pages/brush';
 import Family from '@/pages/family';
 import Kids from '@/pages/kids';
 import Settings from '@/pages/settings';
+import Shop from '@/pages/shop';
 
 import { BottomNav } from '@/components/bottom-nav';
 
@@ -27,6 +28,7 @@ function Router() {
         <Route path="/family" component={Family} />
         <Route path="/kids" component={Kids} />
         <Route path="/settings" component={Settings} />
+        <Route path="/shop" component={Shop} />
         <Route component={NotFound} />
       </Switch>
       <BottomNav />

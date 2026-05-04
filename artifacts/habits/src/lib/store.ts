@@ -25,6 +25,40 @@ export type Task = {
 
 export type CareCategory = 'food' | 'water' | 'activity';
 
+export type ShopCategory = 'food' | 'exercise' | 'sleep';
+
+export type ShopItem = {
+  id: string;
+  emoji: string;
+  name: string;
+  category: ShopCategory;
+  cost: number;
+  description: string;
+};
+
+export const SHOP_ITEMS: ShopItem[] = [
+  // Food
+  { id: 'carrot',   emoji: '🥕', name: 'Carrot Crunch',     category: 'food',     cost: 3,  description: 'Crunchy and healthy!' },
+  { id: 'meat',     emoji: '🍖', name: 'Meaty Bone',         category: 'food',     cost: 5,  description: 'A delicious meaty treat!' },
+  { id: 'egg',      emoji: '🥚', name: 'Scrambled Egg',      category: 'food',     cost: 4,  description: 'Protein-packed breakfast!' },
+  { id: 'water',    emoji: '💧', name: 'Fresh Water',         category: 'food',     cost: 2,  description: 'Cool and refreshing!' },
+  // Exercise
+  { id: 'walk',     emoji: '🚶', name: 'Short Walk',          category: 'exercise', cost: 3,  description: 'A nice stroll outside!' },
+  { id: 'fetch',    emoji: '🎾', name: 'Fetch!',              category: 'exercise', cost: 4,  description: 'Throw and run!' },
+  { id: 'jumping',  emoji: '🦘', name: 'Jumping Fun',         category: 'exercise', cost: 4,  description: 'Bounce bounce bounce!' },
+  { id: 'flying',   emoji: '🦋', name: 'Flying Adventure',   category: 'exercise', cost: 6,  description: 'Soar through the sky!' },
+  // Sleep
+  { id: 'nap2',     emoji: '😴', name: 'Quick Nap',           category: 'sleep',    cost: 2,  description: '2 hours of rest!' },
+  { id: 'sleep6',   emoji: '💤', name: 'Good Sleep',          category: 'sleep',    cost: 4,  description: '6 hours of sweet dreams!' },
+  { id: 'sleep8',   emoji: '🌙', name: 'Full Night\'s Sleep', category: 'sleep',    cost: 6,  description: '8 hours all night long!' },
+];
+
+export type ShopPurchase = {
+  id: string;
+  itemId: string;
+  purchasedAt: string; // ISO
+};
+
 export type BrushSticker = {
   date: string;       // 'yyyy-MM-dd'
   sticker: string;    // emoji
@@ -96,6 +130,7 @@ export type Kid = {
   taskCompletions: Record<string, Record<string, boolean>>; // taskId -> dateStr -> done
   brushStickers: BrushSticker[]; // earned by completing a 3-minute brush
   pet: Pet | null;               // virtual pet; null until first assigned
+  purchases: ShopPurchase[];     // items bought from pet shop
 };
 
 export const TASK_PRESETS: Array<{ name: string; emoji: string; time: TaskTime }> = [
@@ -308,6 +343,7 @@ function seedKids(): Kid[] {
         [flossId]: { [yesterday]: true },
       },
       brushStickers: [],
+      purchases: [],
       pet: {
         species: 'cat',
         name: 'Whiskers',
@@ -331,6 +367,7 @@ function seedKids(): Kid[] {
       tasks: [],
       taskCompletions: {},
       brushStickers: [],
+      purchases: [],
       pet: {
         species: 'dino',
         name: '',
@@ -364,6 +401,7 @@ function migrate(
     taskCompletions: kid.taskCompletions ?? {},
     brushStickers: kid.brushStickers ?? [],
     pet: (kid.pet as Pet | undefined) ?? null,
+    purchases: (kid as Partial<Kid>).purchases ?? [],
   };
 }
 
@@ -450,6 +488,7 @@ export function useKids() {
           tasks: [],
           taskCompletions: {},
           brushStickers: [],
+          purchases: [],
           pet: null,
         };
         return [...prev, newKid];
@@ -724,6 +763,26 @@ export function useKids() {
     setKids(updater);
   }, []);
 
+  const buyShopItem = useCallback((kidId: string, itemId: string): boolean => {
+    const item = SHOP_ITEMS.find((i) => i.id === itemId);
+    if (!item) return false;
+    let success = false;
+    setKids((prev) =>
+      prev.map((k) => {
+        if (k.id !== kidId) return k;
+        if (getSpendablePoints(k) < item.cost) return k;
+        const purchase: ShopPurchase = {
+          id: nanoid(),
+          itemId,
+          purchasedAt: new Date().toISOString(),
+        };
+        success = true;
+        return { ...k, purchases: [...(k.purchases ?? []), purchase] };
+      })
+    );
+    return success;
+  }, []);
+
   const activeKid = kids.find((k) => k.id === activeId) ?? null;
 
   return {
@@ -748,6 +807,7 @@ export function useKids() {
     assignNewPet,
     namePet,
     checkPetDeath,
+    buyShopItem,
     parentPin: parentSettings.parentPin,
     requireParentSignoff: parentSettings.requireParentSignoff,
     setParentPin,
@@ -917,6 +977,29 @@ export function getPointsForDate(kid: Kid, dateStr: string): DayPoints {
 
   return { brushPoints, bonusPoints, taskPoints, perfectBonus,
            total: brushPoints + bonusPoints + taskPoints + perfectBonus };
+}
+
+export function getTotalPointsEarned(kid: Kid): number {
+  const dates = new Set<string>();
+  Object.keys(kid.brushings).forEach((d) => dates.add(d));
+  for (const completions of Object.values(kid.taskCompletions)) {
+    Object.keys(completions).forEach((d) => dates.add(d));
+  }
+  return Array.from(dates).reduce(
+    (sum, d) => sum + getPointsForDate(kid, d).total,
+    0,
+  );
+}
+
+export function getTotalPointsSpent(kid: Kid): number {
+  return (kid.purchases ?? []).reduce((sum, p) => {
+    const item = SHOP_ITEMS.find((i) => i.id === p.itemId);
+    return sum + (item?.cost ?? 0);
+  }, 0);
+}
+
+export function getSpendablePoints(kid: Kid): number {
+  return Math.max(0, getTotalPointsEarned(kid) - getTotalPointsSpent(kid));
 }
 
 export function getWeeklyPoints(kid: Kid, weekDays: Date[]): number {
