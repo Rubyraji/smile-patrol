@@ -160,7 +160,7 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const shopThisWeek = (kid.purchases ?? []).filter((p) => {
-    const d = p.purchasedAt.slice(0, 10);
+    const d = format(new Date(p.purchasedAt), 'yyyy-MM-dd');
     return d >= weekStart && d <= todayStr;
   }).map((p) => ({ ...p, item: SHOP_ITEMS.find((i) => i.id === p.itemId) }))
     .filter((p) => p.item);

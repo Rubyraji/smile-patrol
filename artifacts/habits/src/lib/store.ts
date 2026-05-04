@@ -896,7 +896,7 @@ export function getPetHappiness(kid: Kid, weekDays: Date[]): number {
   const todayStr  = format(new Date(), 'yyyy-MM-dd');
 
   const purchasesThisWeek = (kid.purchases ?? []).filter((p) => {
-    const d = p.purchasedAt.slice(0, 10);
+    const d = format(new Date(p.purchasedAt), 'yyyy-MM-dd');
     return d >= weekStart && d <= todayStr;
   }).length;
 
