@@ -23,7 +23,7 @@ const TABS: { key: ShopCategory; label: string; emoji: string }[] = [
 const CATEGORY_MESSAGES: Record<ShopCategory, (petName: string, itemName: string) => string> = {
   food:     (petName, itemName) => `${petName} is munching on ${itemName}! 😋`,
   exercise: (petName, itemName) => `${petName} is enjoying ${itemName}! 🎉`,
-  sleep:    (petName, itemName) => `${petName} is having a ${itemName}! 🌟`,
+  sleep:    (petName, itemName) => `${petName} is drifting off with ${itemName}… 😴`,
 };
 
 type CelebrationState = {
@@ -42,34 +42,45 @@ function PetCelebrationOverlay({
   onDone: () => void;
 }) {
   const { item, petEmoji, petName } = celebration;
+  const isSleep = item.category === 'sleep';
 
   useEffect(() => {
-    const t = setTimeout(onDone, 2400);
+    const t = setTimeout(onDone, isSleep ? 3200 : 2400);
     return () => clearTimeout(t);
-  }, [onDone]);
+  }, [onDone, isSleep]);
 
-  const foodAnim =
+  // ── item animation ──────────────────────────────────────────────────────
+  const itemAnim =
     item.category === 'food'
       ? { scale: [1, 1.3, 0.8, 1.1, 0], x: [0, -20, -50, -70, -90], y: [0, -10, 0, 10, 20] }
       : item.category === 'exercise'
       ? { y: [0, -30, 0, -20, 0, -10, 0], rotate: [0, 20, -20, 20, -20, 0] }
-      : { y: [0, 5, -5, 5, 0], opacity: [1, 0.8, 1, 0.8, 1] };
+      : { y: [0, -8, 0, -8, 0], scale: [1, 1.06, 1, 1.06, 1] }; // sleep: gentle float
 
+  // ── pet animation ──────────────────────────────────────────────────────
   const petAnim =
     item.category === 'food'
       ? { rotate: [0, -10, 10, -10, 10, 0], scale: [1, 1.1, 1, 1.1, 1] }
       : item.category === 'exercise'
       ? { y: [0, -20, 0, -20, 0], rotate: [0, 5, -5, 5, 0] }
-      : { rotate: [0, 3, -3, 3, -3, 0], scale: [1, 0.97, 1, 0.97, 1] };
+      : { rotate: [0, -6, 6, -4, 4, 0], y: [0, 3, -3, 3, 0] }; // sleep: drowsy sway
+
+  // ── card colour ────────────────────────────────────────────────────────
+  const cardBg    = isSleep ? '#1e1b4b' : kidColor;
+  const cardGlow  = isSleep ? '#6d28d9' : kidColor;
+
+  // ── floating decorators ────────────────────────────────────────────────
+  const sleepParticles = ['🌙', '⭐', '🌟', '💫', '🌙', '⭐'];
+  const defaultParticles = ['✨', '⭐', '💫', '✨'];
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.25 }}
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }}
+      style={{ backgroundColor: isSleep ? 'rgba(10,10,30,0.75)' : 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }}
       onClick={onDone}
     >
       <motion.div
@@ -78,18 +89,39 @@ function PetCelebrationOverlay({
         exit={{ scale: 0.8, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 22 }}
         className="rounded-4xl p-8 flex flex-col items-center gap-5 mx-6 max-w-xs w-full text-center relative overflow-hidden"
-        style={{ backgroundColor: kidColor, boxShadow: `0 0 60px ${kidColor}88` }}
+        style={{ backgroundColor: cardBg, boxShadow: `0 0 60px ${cardGlow}88` }}
       >
-        {/* floating sparkles */}
-        {['✨','⭐','💫','✨'].map((s, i) => (
+        {/* floating decorators */}
+        {(isSleep ? sleepParticles : defaultParticles).map((s, i) => (
           <motion.span
             key={i}
             className="absolute text-xl pointer-events-none select-none"
-            style={{ top: `${15 + i * 18}%`, left: i % 2 === 0 ? '8%' : '82%' }}
-            animate={{ y: [0, -12, 0], opacity: [0.7, 1, 0.7] }}
-            transition={{ duration: 1.2, delay: i * 0.2, repeat: Infinity }}
+            style={{ top: `${10 + i * 14}%`, left: i % 2 === 0 ? '7%' : '80%' }}
+            animate={isSleep
+              ? { y: [0, -18, -36], opacity: [0, 1, 0], scale: [0.7, 1.1, 0.5] }
+              : { y: [0, -12, 0], opacity: [0.7, 1, 0.7] }
+            }
+            transition={{ duration: isSleep ? 2.2 : 1.2, delay: i * 0.25, repeat: Infinity }}
           >
             {s}
+          </motion.span>
+        ))}
+
+        {/* floating Z's for sleep */}
+        {isSleep && ['Z', 'z', 'Z'].map((z, i) => (
+          <motion.span
+            key={`z-${i}`}
+            className="absolute font-black pointer-events-none select-none text-indigo-300"
+            style={{
+              fontSize: `${22 - i * 4}px`,
+              left: `${52 + i * 10}%`,
+              bottom: `${35 + i * 12}%`,
+            }}
+            initial={{ opacity: 0, y: 0 }}
+            animate={{ opacity: [0, 1, 0], y: -40 - i * 14, x: i * 6 }}
+            transition={{ duration: 1.8, delay: 0.3 + i * 0.5, repeat: Infinity }}
+          >
+            {z}
           </motion.span>
         ))}
 
@@ -97,25 +129,28 @@ function PetCelebrationOverlay({
         <div className="flex items-end justify-center gap-3 mt-2">
           <motion.div
             animate={petAnim}
-            transition={{ duration: 1.8, repeat: 1, ease: 'easeInOut' }}
+            transition={{ duration: isSleep ? 2.4 : 1.8, repeat: Infinity, ease: 'easeInOut' }}
             className="text-7xl select-none"
           >
             {petEmoji}
           </motion.div>
           <motion.div
-            animate={foodAnim}
-            transition={{ duration: 1.6, repeat: 1, ease: 'easeInOut' }}
+            animate={itemAnim}
+            transition={{ duration: isSleep ? 2.2 : 1.6, repeat: Infinity, ease: 'easeInOut' }}
             className="text-5xl select-none"
           >
             {item.emoji}
           </motion.div>
         </div>
 
-        <div className="text-white space-y-1">
-          <p className="text-2xl font-black leading-tight">
+        <div className="space-y-1">
+          <p className="text-2xl font-black leading-tight text-white">
             {CATEGORY_MESSAGES[item.category](petName, item.name)}
           </p>
-          <p className="text-sm font-semibold opacity-80">Tap anywhere to close</p>
+          {isSleep && (
+            <p className="text-indigo-200 text-base font-bold">Sweet dreams! 🌙</p>
+          )}
+          <p className="text-sm font-semibold opacity-60 text-white">Tap anywhere to close</p>
         </div>
       </motion.div>
     </motion.div>
