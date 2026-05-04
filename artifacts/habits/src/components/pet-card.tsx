@@ -366,66 +366,135 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
   }
 
   /* ── Alive ───────────────────────────────────────────────────── */
+  // Walk speed and bounce energy scales with happiness
+  const walkDuration = hearts > 3 ? 4 : hearts > 1 ? 6 : 10;
+  const bounceDuration = hearts > 3 ? 0.28 : hearts > 1 ? 0.42 : 0.7;
+  const bounceHeight = hearts > 3 ? 9 : hearts > 1 ? 6 : 3;
+
   return (
     <div
-      className="bg-card border-2 rounded-2xl p-4 relative overflow-hidden"
+      className="bg-card border-2 rounded-2xl overflow-hidden relative"
       style={{ borderColor: `${info.color}66` }}
     >
+      {/* Background glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: `radial-gradient(circle at 75% 20%, ${info.color}20 0%, transparent 65%)`,
+          background: `radial-gradient(circle at 60% 30%, ${info.color}18 0%, transparent 60%)`,
         }}
       />
 
-      <div className="relative flex items-start gap-3">
-        {/* Pet avatar */}
-        <div className="flex flex-col items-center shrink-0">
+      {/* ── Play area ─────────────────────────────────────────────── */}
+      <div
+        className="relative h-28 overflow-hidden"
+        style={{ background: `linear-gradient(to bottom, ${info.color}12, ${info.color}06)` }}
+      >
+        {/* Ground shadow stripe */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-4"
+          style={{ background: `linear-gradient(to top, ${info.color}18, transparent)` }}
+        />
+
+        {/* Walking pet — outer handles x + flip, inner handles y bounce */}
+        <motion.div
+          className="absolute"
+          style={{ bottom: 14 }}
+          animate={{
+            x: [-95, 95, 95, -95, -95],
+            scaleX: [1, 1, -1, -1, 1],
+          }}
+          transition={{
+            duration: walkDuration,
+            repeat: Infinity,
+            ease: 'linear',
+            times: [0, 0.45, 0.5, 0.95, 1],
+          }}
+        >
           <motion.span
-            animate={
-              hearts > 1
-                ? { y: [0, -7, 0], rotate: [0, -4, 4, 0] }
-                : { x: [-2, 2, -2] }
-            }
+            className="text-5xl block select-none leading-none"
+            animate={{ y: [0, -bounceHeight, 0] }}
             transition={{
-              duration: hearts > 1 ? 2.2 : 0.6,
+              duration: bounceDuration,
               repeat: Infinity,
               ease: 'easeInOut',
-              repeatDelay: hearts > 1 ? 1.5 : 0,
             }}
-            className="text-5xl"
+            style={{ filter: `drop-shadow(0 6px 4px ${info.color}55)` }}
           >
             {info.emoji}
           </motion.span>
-        </div>
+        </motion.div>
 
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h4 className="font-extrabold text-xl leading-none truncate">{pet.name}</h4>
-            {pet.generation > 0 && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
-                Gen.{pet.generation + 1}
-              </span>
-            )}
+        {/* Floating mood bubble */}
+        <AnimatePresence>
+          {hearts === 0 && (
+            <motion.span
+              key="sad"
+              initial={{ opacity: 0, y: 4, scale: 0.7 }}
+              animate={{ opacity: [0.7, 1, 0.7], y: [0, -4, 0], scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute top-2 right-3 text-xl select-none"
+            >
+              😢
+            </motion.span>
+          )}
+          {hearts > 0 && hearts < 2 && (
+            <motion.span
+              key="hungry"
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: [0.6, 1, 0.6], y: [0, -3, 0], scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.8, repeat: Infinity }}
+              className="absolute top-2 right-3 text-xl select-none"
+            >
+              🍖
+            </motion.span>
+          )}
+          {hearts >= 4 && (
+            <motion.span
+              key="happy"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: [0.7, 1, 0.7], y: [0, -5, 0], scale: [1, 1.15, 1] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.4, repeat: Infinity }}
+              className="absolute top-2 right-3 text-xl select-none"
+            >
+              ✨
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ── Info panel ────────────────────────────────────────────── */}
+      <div className="relative p-4 pt-3">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h4 className="font-extrabold text-xl leading-none truncate">{pet.name}</h4>
+              {pet.generation > 0 && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
+                  Gen.{pet.generation + 1}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground font-semibold mt-0.5">{info.label}</p>
           </div>
-          <p className="text-xs text-muted-foreground font-semibold mt-0.5">{info.label}</p>
 
-          {/* Health hearts */}
-          <div className="flex gap-0.5 mt-2">
+          {/* Hearts */}
+          <div className="flex gap-0.5 shrink-0 mt-0.5">
             {Array.from({ length: 5 }).map((_, i) => {
-              const full  = i < Math.floor(hearts);
-              const half  = !full && i === Math.floor(hearts) && (hearts % 1) > 0;
+              const full = i < Math.floor(hearts);
+              const half = !full && i === Math.floor(hearts) && (hearts % 1) > 0;
               return (
                 <motion.span
                   key={i}
                   initial={{ scale: 0.6 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: i * 0.05, type: 'spring', stiffness: 300 }}
-                  className="text-lg leading-none relative inline-block"
+                  className="text-base leading-none relative inline-block"
                 >
                   {full ? '❤️' : half ? (
-                    <span className="relative inline-block w-[1.25rem] h-[1.25rem]">
+                    <span className="relative inline-block w-[1.1rem] h-[1.1rem]">
                       <span className="absolute inset-0">🤍</span>
                       <span className="absolute inset-0 overflow-hidden" style={{ width: '55%' }}>❤️</span>
                     </span>
@@ -434,53 +503,53 @@ export function PetCard({ kid, onAssign, onName, onCheckDeath }: Props) {
               );
             })}
           </div>
+        </div>
 
-          {hearts < 1 && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-xs font-bold mt-1.5"
-              style={{ color: info.color }}
-            >
-              {hearts === 0
-                ? '😰 Needs care — visit the shop!'
-                : '⚠️ A little hungry — buy more treats!'}
-            </motion.p>
+        {hearts < 1 && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-xs font-bold mb-2"
+            style={{ color: info.color }}
+          >
+            {hearts === 0
+              ? '😰 Needs care — visit the shop!'
+              : '⚠️ A little hungry — buy more treats!'}
+          </motion.p>
+        )}
+
+        {/* Care items this week */}
+        <div className="pt-2 border-t border-border/40">
+          {shopThisWeek.length > 0 ? (
+            <>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Cared for this week
+              </p>
+              <div className="flex gap-1.5 flex-wrap">
+                {shopThisWeek.slice(-12).map((p, i) => (
+                  <motion.span
+                    key={p.id}
+                    initial={{ scale: 0, rotate: -15 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 14, delay: Math.min(i * 0.04, 0.4) }}
+                    className="text-xl"
+                    title={p.item!.name}
+                  >
+                    {p.item!.emoji}
+                  </motion.span>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5 font-semibold">
+                {!shopThisWeek.some((p) => p.item!.category === 'food') && '🍖 Visit the shop to feed them! '}
+                {!shopThisWeek.some((p) => p.item!.category === 'exercise' || p.item!.category === 'sleep') && '🏃 Try exercise or sleep too!'}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground font-semibold">
+              🛍️ Visit the <strong>Pet Shop</strong> to feed &amp; care for {pet.name}!
+            </p>
           )}
         </div>
-      </div>
-
-      {/* Care items this week */}
-      <div className="mt-3 pt-3 border-t border-border/40 relative">
-        {shopThisWeek.length > 0 ? (
-          <>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-              Cared for this week
-            </p>
-            <div className="flex gap-1.5 flex-wrap">
-              {shopThisWeek.slice(-12).map((p, i) => (
-                <motion.span
-                  key={p.id}
-                  initial={{ scale: 0, rotate: -15 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 14, delay: Math.min(i * 0.04, 0.4) }}
-                  className="text-xl"
-                  title={p.item!.name}
-                >
-                  {p.item!.emoji}
-                </motion.span>
-              ))}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1.5 font-semibold">
-              {!shopThisWeek.some((p) => p.item!.category === 'food') && '🍖 Visit the shop to feed them! '}
-              {!shopThisWeek.some((p) => p.item!.category === 'exercise' || p.item!.category === 'sleep') && '🏃 Try exercise or sleep too!'}
-            </p>
-          </>
-        ) : (
-          <p className="text-xs text-muted-foreground font-semibold">
-            🛍️ Visit the <strong>Pet Shop</strong> to feed &amp; care for {pet.name}!
-          </p>
-        )}
       </div>
     </div>
   );
