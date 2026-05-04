@@ -169,7 +169,13 @@ export default function Home() {
                     transition={{ duration: 1.1, repeat: Infinity, delay: 1.3 }}
                   >✦</motion.span>
                 </span>
-                <span>Toothbrush Hero</span>
+                <span aria-label="Toothbrush Hero">
+                  {'Toothbrush Hero'.split('').map((char, i) =>
+                    char === ' '
+                      ? <span key={i}>&nbsp;</span>
+                      : <span key={i} className="rainbow-letter" style={{ animationDelay: `${i * 0.18}s` }}>{char}</span>
+                  )}
+                </span>
               </h1>
               <p className="text-sm font-semibold text-muted-foreground pl-1">
                 {format(new Date(), 'EEEE, MMM d')}
