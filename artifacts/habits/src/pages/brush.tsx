@@ -94,7 +94,8 @@ export default function Brush() {
   const { playZoneSwitch, playComplete, playCountdownBeep } = useAudioCues();
 
   // Zone index computed early so effects can reference it (hooks must not come after early returns)
-  const zoneIdx = Math.min(1, Math.floor(elapsed / halfMs));
+  // Guard against halfMs=0 (e.g. during HMR) which would produce NaN via 0/0
+  const zoneIdx = halfMs > 0 ? Math.min(1, Math.floor(elapsed / halfMs)) : 0;
   const zoneRemainingSec = Math.max(
     0,
     Math.ceil((halfMs * (zoneIdx + 1) - elapsed) / 1000),
@@ -291,7 +292,7 @@ export default function Brush() {
     [completed, elapsed, teeth, halfMs],
   );
 
-  const zone = theme.zones[zoneIdx];
+  const zone = theme.zones[zoneIdx] ?? theme.zones[0];
   const accentColor = theme.color || activeKid.color;
   const secondaryColor = theme.secondaryColor || activeKid.color;
 
