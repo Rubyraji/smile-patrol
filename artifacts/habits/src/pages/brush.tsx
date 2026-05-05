@@ -39,7 +39,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useAudioCues } from '@/lib/use-audio-cues';
-import { useBrushMusic } from '@/lib/use-brush-music';
 import { FunFactCard } from '@/components/fun-fact-card';
 import { BRUSH_THEMES, THEME_ORDER, type BrushThemeKey } from '@/lib/brush-themes';
 
@@ -63,7 +62,7 @@ export default function Brush() {
 
   // null = not chosen yet; 2 = 2-minute; 3 = 3-minute (earns a pet care item)
   const [durationChoice, setDurationChoice] = useState<2 | 3 | null>(null);
-  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [stickerEarned, setStickerEarned] = useState<{ emoji: string; name: string } | null>(null);
   const [showHatch, setShowHatch] = useState(false);
   // Capture egg state before the brush completes so we can trigger the animation
@@ -94,10 +93,7 @@ export default function Brush() {
   const baseRef = useRef(0);
 
   // ── Audio cues ──────────────────────────────────────────────────────────
-  const { playZoneSwitch, playComplete, playCountdownBeep } = useAudioCues();
-
-  // ── Background music ────────────────────────────────────────────────────
-  const { play: playMusic, stop: stopMusic } = useBrushMusic(musicEnabled);
+  const { playZoneSwitch, playComplete, playCountdownBeep } = useAudioCues(soundEnabled);
 
   // Zone index computed early so effects can reference it (hooks must not come after early returns)
   // Guard against halfMs=0 (e.g. during HMR) which would produce NaN via 0/0
@@ -106,15 +102,6 @@ export default function Brush() {
     0,
     Math.ceil((halfMs * (zoneIdx + 1) - elapsed) / 1000),
   );
-
-  // Play music while running, stop when paused or completed
-  useEffect(() => {
-    if (running) {
-      playMusic();
-    } else {
-      stopMusic();
-    }
-  }, [running, playMusic, stopMusic]);
 
   // Chime when switching from top → bottom zone
   const prevZoneRef = useRef(0);
@@ -136,7 +123,7 @@ export default function Brush() {
     if (!running) { lastBeepSecRef.current = -1; return; }
     if (zoneRemainingSec >= 1 && zoneRemainingSec <= 5 && zoneRemainingSec !== lastBeepSecRef.current) {
       lastBeepSecRef.current = zoneRemainingSec;
-      playCountdownBeep(zoneRemainingSec === 1);
+      playCountdownBeep(zoneRemainingSec);
     }
   }, [running, zoneRemainingSec, playCountdownBeep]);
 
@@ -243,7 +230,6 @@ export default function Brush() {
   };
   const handlePause = () => setRunning(false);
   const handleReset = () => {
-    stopMusic();
     setRunning(false);
     setElapsed(0);
     setCompleted(false);
@@ -339,12 +325,12 @@ export default function Brush() {
         </div>
 
         <button
-          onClick={() => setMusicEnabled((v) => !v)}
+          onClick={() => setSoundEnabled((v) => !v)}
           className="w-10 h-10 rounded-full bg-card border flex items-center justify-center hover:bg-muted active:scale-95 transition"
-          aria-label={musicEnabled ? 'Mute music' : 'Enable music'}
-          title={musicEnabled ? 'Music on' : 'Music off'}
+          aria-label={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
+          title={soundEnabled ? 'Sound on' : 'Sound off'}
         >
-          {musicEnabled
+          {soundEnabled
             ? <Volume2 className="h-5 w-5 text-foreground" />
             : <VolumeX className="h-5 w-5 text-muted-foreground" />}
         </button>
