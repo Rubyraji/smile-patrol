@@ -279,6 +279,21 @@ export default function Brush() {
     setSignedOff(true);
   };
 
+  // These memos MUST stay above the early return — hooks cannot be called
+  // conditionally, so they run even when activeKid is null (safe: defaults to []).
+  const teeth = useMemo(
+    () =>
+      activeKid
+        ? getTeethForAge(activeKid.age ?? DEFAULT_AGE, activeKid.missingTeeth ?? [])
+        : [],
+    [activeKid?.age, activeKid?.missingTeeth],
+  );
+
+  const brushedSurfaces = useMemo(
+    () => (completed ? allBrushed(teeth) : computeBrushedSurfaces(elapsed, teeth, halfMs)),
+    [completed, elapsed, teeth, halfMs],
+  );
+
   if (!activeKid) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
@@ -297,16 +312,6 @@ export default function Brush() {
   const remainingSec = Math.ceil(remainingMs / 1000);
   const mins = Math.floor(remainingSec / 60);
   const secs = remainingSec % 60;
-
-  const teeth = useMemo(
-    () => getTeethForAge(activeKid.age ?? DEFAULT_AGE, activeKid.missingTeeth ?? []),
-    [activeKid.age, activeKid.missingTeeth],
-  );
-
-  const brushedSurfaces = useMemo(
-    () => (completed ? allBrushed(teeth) : computeBrushedSurfaces(elapsed, teeth, halfMs)),
-    [completed, elapsed, teeth, halfMs],
-  );
 
   const zone = theme.zones[zoneIdx] ?? theme.zones[0];
   const accentColor = theme.color || activeKid.color;
