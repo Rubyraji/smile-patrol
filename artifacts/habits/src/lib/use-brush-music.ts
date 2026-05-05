@@ -1,62 +1,53 @@
 import { useCallback, useRef } from 'react';
 
-// "Cockles and Mussels" (Molly Malone) — [frequency Hz, duration s]
-// 3/4 waltz, quarter note ≈ 0.5 s  (♩= 120 bpm)
-const C4  = 261.63;
-const D4  = 293.66;
-const E4  = 329.63;
-const F4  = 349.23;
-const G4  = 392.00;
-const A4  = 440.00;
-const C5  = 523.25;
+// "The Wheels on the Bus" — [frequency Hz, duration s]
+// 4/4 time, quarter note = 0.5 s  (♩= 120 bpm)
+const C4 = 261.63;
+const D4 = 293.66;
+const E4 = 329.63;
+const G4 = 392.00;
+const A4 = 440.00;
 
 const MELODY: [number, number][] = [
-  // "In Dublin's fair city"
-  [C4, 0.25], // In
-  [F4, 0.50], // Dub-
-  [F4, 0.50], // -lin's
-  [F4, 0.25], // fair
-  [F4, 0.25], // ci-
-  [F4, 0.50], // -ty
+  // "The wheels on the bus go round and round"
+  [C4, 0.50], // The
+  [C4, 0.50], // wheels
+  [C4, 0.25], // on
+  [C4, 0.25], // the
+  [E4, 0.50], // bus
+  [G4, 0.50], // go
+  [G4, 0.50], // round
+  [A4, 0.25], // and
+  [G4, 0.75], // round
 
-  // "where girls are so pretty"
-  [A4, 0.25], // where
-  [C5, 0.25], // girls
-  [A4, 0.25], // are
-  [F4, 0.75], // so pret-
+  // "round and round" × 2
+  [E4, 0.25], // round
+  [G4, 0.25], // and
+  [A4, 0.75], // round
+  [E4, 0.25], // round
+  [G4, 0.25], // and
+  [A4, 0.75], // round
 
-  // "I first set"
-  [G4, 0.25], // -ty / I
-  [G4, 0.25], // first
-  [G4, 0.50], // set
+  // "The wheels on the bus go round and round"
+  [C4, 0.50],
+  [C4, 0.50],
+  [C4, 0.25],
+  [C4, 0.25],
+  [E4, 0.50],
+  [G4, 0.50],
+  [G4, 0.50],
+  [A4, 0.25],
+  [G4, 0.75],
 
-  // "my eyes on sweet Molly Malone"
-  [E4, 0.25], // my
-  [D4, 0.25], // eyes
-  [C4, 1.50], // on (long hold)
-
-  // "She wheeled her wheelbarrow"
-  [C4, 0.25], // She
-  [F4, 0.50], // wheeled
-  [F4, 0.50], // her
-  [F4, 0.25], // wheel-
-  [F4, 0.25], // -bar-
-  [F4, 0.50], // -row
-
-  // "through streets broad and narrow"
-  [A4, 0.25], // through
-  [C4, 0.25], // streets
-  [A4, 0.25], // broad
-  [F4, 0.75], // and nar-
-
-  // "row — crying cockles…"
-  [G4, 0.25], // -row
-  [C4, 0.50], // cry-
-  [F4, 1.50], // -ing… (hold before repeat)
+  // "all through the town"
+  [G4, 0.50], // all
+  [E4, 0.25], // through
+  [D4, 0.25], // the
+  [C4, 1.50], // town
 ];
 
-const NOTE_GAP    = 0.025;
-const LOOP_PAUSE  = 0.8;
+const NOTE_GAP     = 0.025;
+const LOOP_PAUSE   = 0.6;
 const LOOP_DURATION =
   MELODY.reduce((s, [, d]) => s + d + NOTE_GAP, 0) + LOOP_PAUSE;
 
