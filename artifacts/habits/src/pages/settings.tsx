@@ -480,7 +480,7 @@ export default function Settings() {
             © {new Date().getFullYear()} Radhika Arasu. All rights reserved.
           </p>
           <p className="text-[10px] text-muted-foreground/40 mt-0.5">
-            Toothbrush Hero
+            Smile Patrol
           </p>
         </footer>
       </main>
