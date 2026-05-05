@@ -105,8 +105,8 @@ export default function Home() {
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-4xl font-black flex items-center gap-2.5 leading-none mb-0.5">
-                <span>🦷</span>
+              <h1 className="text-4xl font-black flex items-center gap-2 leading-none mb-0.5">
+                <img src="/logo.png" alt="Smile Patrol logo" className="w-12 h-12 object-contain" />
                 <span aria-label="Smile Patrol">
                   {'Smile Patrol'.split('').map((char, i) =>
                     char === ' '
