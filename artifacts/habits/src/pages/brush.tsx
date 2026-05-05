@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useAudioCues } from '@/lib/use-audio-cues';
-import { useSpeechCues } from '@/lib/use-speech-cues';
+import { useBrushMusic } from '@/lib/use-brush-music';
 import { FunFactCard } from '@/components/fun-fact-card';
 import { BRUSH_THEMES, THEME_ORDER, type BrushThemeKey } from '@/lib/brush-themes';
 
@@ -63,7 +63,7 @@ export default function Brush() {
 
   // null = not chosen yet; 2 = 2-minute; 3 = 3-minute (earns a pet care item)
   const [durationChoice, setDurationChoice] = useState<2 | 3 | null>(null);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(true);
   const [stickerEarned, setStickerEarned] = useState<{ emoji: string; name: string } | null>(null);
   const [showHatch, setShowHatch] = useState(false);
   // Capture egg state before the brush completes so we can trigger the animation
@@ -96,8 +96,8 @@ export default function Brush() {
   // ── Audio cues ──────────────────────────────────────────────────────────
   const { playZoneSwitch, playComplete, playCountdownBeep } = useAudioCues();
 
-  // ── Speech encouragement ────────────────────────────────────────────────
-  const { stop: stopSpeech, speakStart, speakZoneSwitch, speakAlmostDone, speakComplete, speakPeriodic } = useSpeechCues(voiceEnabled);
+  // ── Background music ────────────────────────────────────────────────────
+  const { play: playMusic, stop: stopMusic } = useBrushMusic(musicEnabled);
 
   // Zone index computed early so effects can reference it (hooks must not come after early returns)
   // Guard against halfMs=0 (e.g. during HMR) which would produce NaN via 0/0
@@ -107,48 +107,28 @@ export default function Brush() {
     Math.ceil((halfMs * (zoneIdx + 1) - elapsed) / 1000),
   );
 
-  // Speak encouragement when brushing starts for the first time
-  const hasSpokenStartRef = useRef(false);
+  // Play music while running, stop when paused or completed
   useEffect(() => {
-    if (running && elapsed === 0) {
-      hasSpokenStartRef.current = false;
+    if (running) {
+      playMusic();
+    } else {
+      stopMusic();
     }
-    if (running && !hasSpokenStartRef.current && elapsed < 500) {
-      hasSpokenStartRef.current = true;
-      setTimeout(() => speakStart(), 400);
-    }
-    if (!running && elapsed === 0) hasSpokenStartRef.current = false;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running]);
-
-  // Periodic encouragement every ~20 seconds during brushing
-  const lastPeriodicSecRef = useRef(-1);
-  useEffect(() => {
-    if (!running) { lastPeriodicSecRef.current = -1; return; }
-    const sec = Math.floor(elapsed / 1000);
-    if (sec > 0 && sec % 20 === 0 && sec !== lastPeriodicSecRef.current) {
-      lastPeriodicSecRef.current = sec;
-      speakPeriodic();
-    }
-  }, [running, elapsed, speakPeriodic]);
+  }, [running, playMusic, stopMusic]);
 
   // Chime when switching from top → bottom zone
   const prevZoneRef = useRef(0);
   useEffect(() => {
     if (running && zoneIdx === 1 && prevZoneRef.current === 0) {
       playZoneSwitch();
-      setTimeout(() => speakZoneSwitch(), 600);
     }
     prevZoneRef.current = zoneIdx;
-  }, [zoneIdx, running, playZoneSwitch, speakZoneSwitch]);
+  }, [zoneIdx, running, playZoneSwitch]);
 
   // Fanfare when the timer completes
   useEffect(() => {
-    if (completed) {
-      playComplete();
-      setTimeout(() => speakComplete(), 800);
-    }
-  }, [completed, playComplete, speakComplete]);
+    if (completed) playComplete();
+  }, [completed, playComplete]);
 
   // Countdown beeps in the last 5 seconds of each zone
   const lastBeepSecRef = useRef(-1);
@@ -196,10 +176,9 @@ export default function Brush() {
       almostDoneShownRef.current = zoneIdx;
       const msg = ALMOST_DONE_MSGS[Math.floor(Math.random() * ALMOST_DONE_MSGS.length)];
       showMotivMsg(msg, 4500);
-      speakAlmostDone();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, zoneRemainingSec, zoneIdx, showMotivMsg, speakAlmostDone]);
+  }, [running, zoneRemainingSec, zoneIdx, showMotivMsg]);
 
   // Clear message on reset
   useEffect(() => {
@@ -264,7 +243,7 @@ export default function Brush() {
   };
   const handlePause = () => setRunning(false);
   const handleReset = () => {
-    stopSpeech();
+    stopMusic();
     setRunning(false);
     setElapsed(0);
     setCompleted(false);
@@ -360,12 +339,12 @@ export default function Brush() {
         </div>
 
         <button
-          onClick={() => setVoiceEnabled((v) => !v)}
+          onClick={() => setMusicEnabled((v) => !v)}
           className="w-10 h-10 rounded-full bg-card border flex items-center justify-center hover:bg-muted active:scale-95 transition"
-          aria-label={voiceEnabled ? 'Mute voice prompts' : 'Enable voice prompts'}
-          title={voiceEnabled ? 'Voice on' : 'Voice off'}
+          aria-label={musicEnabled ? 'Mute music' : 'Enable music'}
+          title={musicEnabled ? 'Music on' : 'Music off'}
         >
-          {voiceEnabled
+          {musicEnabled
             ? <Volume2 className="h-5 w-5 text-foreground" />
             : <VolumeX className="h-5 w-5 text-muted-foreground" />}
         </button>
