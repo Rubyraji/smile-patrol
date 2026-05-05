@@ -1,0 +1,13 @@
+uploads = []
+
+[[generated]]
+id = "pFyaf3Bv1ZKz2FNsO5TU9"
+uri = "file://attached_assets/generated_images/smile_patrol_logo.png"
+type = "image"
+title = "smile patrol logo"
+
+[[outputs]]
+id = "GKn66W0MRwkIJR7DhX3SL"
+uri = "file://attached_assets/generated_images/smile_patrol_logo.png"
+type = "image"
+title = "Smile Patrol Logo"
