@@ -107,8 +107,8 @@ export default function Home() {
             <div>
               <h1 className="text-4xl font-black flex items-center gap-2.5 leading-none mb-0.5">
                 <span>🦷</span>
-                <span aria-label="Smile Patrol">
-                  {'Smile Patrol'.split('').map((char, i) =>
+                <span aria-label="Toothbrush Hero">
+                  {'Toothbrush Hero'.split('').map((char, i) =>
                     char === ' '
                       ? <span key={i}>&nbsp;</span>
                       : <span key={i} className="rainbow-letter" style={{ animationDelay: `${i * 0.18}s` }}>{char}</span>

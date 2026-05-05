@@ -86,7 +86,7 @@ function CertificateContent({
 
       {/* ── App brand ── */}
       <div style={{ fontSize: 12, fontWeight: 800, color: c, letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 2 }}>
-        🦷 Smile Patrol
+        🦷 Toothbrush Hero
       </div>
       <div style={{ fontSize: 19, fontWeight: 900, color: '#1A1A2E', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 18 }}>
         Certificate of Achievement
@@ -182,11 +182,11 @@ function CertificateContent({
       {/* ── Signature line ── */}
       <div style={{ width: 140, borderTop: `1.5px solid #DDD`, marginBottom: 4, marginTop: 8 }} />
       <div style={{ fontSize: 11, color: '#BBBBBB', fontWeight: 700 }}>Radhika Arasu</div>
-      <div style={{ fontSize: 10, color: '#CCCCCC', marginBottom: 12 }}>Smile Patrol</div>
+      <div style={{ fontSize: 10, color: '#CCCCCC', marginBottom: 12 }}>Toothbrush Hero</div>
 
       {/* ── Copyright ── */}
       <div style={{ marginTop: 'auto', fontSize: 9, color: '#CCCCCC', fontWeight: 600, letterSpacing: '0.06em' }}>
-        © {new Date().getFullYear()} RADHIKA ARASU · ALL RIGHTS RESERVED · SMILE PATROL
+        © {new Date().getFullYear()} RADHIKA ARASU · ALL RIGHTS RESERVED · TOOTHBRUSH HERO
       </div>
     </div>
   );
