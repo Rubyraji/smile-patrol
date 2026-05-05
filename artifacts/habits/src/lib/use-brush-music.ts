@@ -1,37 +1,68 @@
 import { useCallback, useRef } from 'react';
 
-// "Row, Row, Row Your Boat" — [frequency Hz, duration s]
-// Tempo: quarter note ≈ 0.5 s  (♩= 120 bpm)
-//   dotted quarter = 0.75 s  |  quarter = 0.5 s  |  eighth = 0.25 s  |  dotted half = 1.5 s
+// "Cockles and Mussels" (Molly Malone) — [frequency Hz, duration s]
+// 3/4 waltz, quarter note ≈ 0.5 s  (♩= 120 bpm)
 const C4  = 261.63;
 const D4  = 293.66;
 const E4  = 329.63;
 const F4  = 349.23;
 const G4  = 392.00;
+const A4  = 440.00;
 const C5  = 523.25;
 
 const MELODY: [number, number][] = [
-  // Row,  row,  row  your  boat
-  [C4, 0.75], [C4, 0.25], [C4, 0.50], [D4, 0.25], [E4, 0.75],
-  // Gent-ly  down  the  stream
-  [E4, 0.25], [D4, 0.25], [E4, 0.25], [F4, 0.25], [G4, 1.50],
-  // Mer-ri-ly  mer-ri-ly  mer-ri-ly  mer-ri-ly
-  [C5, 0.25], [C5, 0.25], [C5, 0.25],
-  [G4, 0.25], [G4, 0.25], [G4, 0.25],
-  [E4, 0.25], [E4, 0.25], [E4, 0.25],
-  [D4, 0.25], [D4, 0.25], [D4, 0.25],
-  // Life  is  but  a  dream
-  [G4, 0.25], [F4, 0.25], [E4, 0.25], [D4, 0.25], [C4, 1.50],
+  // "In Dublin's fair city"
+  [C4, 0.25], // In
+  [F4, 0.50], // Dub-
+  [F4, 0.50], // -lin's
+  [F4, 0.25], // fair
+  [F4, 0.25], // ci-
+  [F4, 0.50], // -ty
+
+  // "where girls are so pretty"
+  [A4, 0.25], // where
+  [C5, 0.25], // girls
+  [A4, 0.25], // are
+  [F4, 0.75], // so pret-
+
+  // "I first set"
+  [G4, 0.25], // -ty / I
+  [G4, 0.25], // first
+  [G4, 0.50], // set
+
+  // "my eyes on sweet Molly Malone"
+  [E4, 0.25], // my
+  [D4, 0.25], // eyes
+  [C4, 1.50], // on (long hold)
+
+  // "She wheeled her wheelbarrow"
+  [C4, 0.25], // She
+  [F4, 0.50], // wheeled
+  [F4, 0.50], // her
+  [F4, 0.25], // wheel-
+  [F4, 0.25], // -bar-
+  [F4, 0.50], // -row
+
+  // "through streets broad and narrow"
+  [A4, 0.25], // through
+  [C4, 0.25], // streets
+  [A4, 0.25], // broad
+  [F4, 0.75], // and nar-
+
+  // "row — crying cockles…"
+  [G4, 0.25], // -row
+  [C4, 0.50], // cry-
+  [F4, 1.50], // -ing… (hold before repeat)
 ];
 
-const NOTE_GAP    = 0.025; // tiny articulation gap between notes
-const LOOP_PAUSE  = 0.6;   // brief rest before the song repeats
+const NOTE_GAP    = 0.025;
+const LOOP_PAUSE  = 0.8;
 const LOOP_DURATION =
   MELODY.reduce((s, [, d]) => s + d + NOTE_GAP, 0) + LOOP_PAUSE;
 
 const MELODY_VOL  = 0.16;
 const HARMONY_VOL = 0.06;
-const LOOK_AHEAD  = 0.12; // schedule this many seconds ahead
+const LOOK_AHEAD  = 0.12;
 
 function makeCtx(ref: React.MutableRefObject<AudioContext | null>): AudioContext {
   if (!ref.current || ref.current.state === 'closed') {
@@ -54,7 +85,7 @@ export function useBrushMusic(enabled = true) {
 
     let t = loopStart;
     MELODY.forEach(([freq, dur]) => {
-      // Melody voice — sine wave
+      // Melody — sine
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -67,7 +98,7 @@ export function useBrushMusic(enabled = true) {
       osc.start(t);
       osc.stop(t + dur + 0.01);
 
-      // Soft harmony — triangle an octave below, for warmth
+      // Soft octave-below harmony — triangle
       const osc2  = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.type = 'triangle';
@@ -83,7 +114,6 @@ export function useBrushMusic(enabled = true) {
       t += dur + NOTE_GAP;
     });
 
-    // Reschedule next loop slightly before this one ends
     const msUntilNext = Math.max(
       0,
       (loopStart + LOOP_DURATION - LOOK_AHEAD - ctx.currentTime) * 1000,
