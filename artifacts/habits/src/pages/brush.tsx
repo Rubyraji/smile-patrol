@@ -93,39 +93,53 @@ export default function Brush() {
   const baseRef = useRef(0);
 
   // ── Audio cues ──────────────────────────────────────────────────────────
-  const { playZoneSwitch, playComplete, playCountdownBeep } = useAudioCues(soundEnabled);
+  const { playZoneSurface, playZoneSwitch, playComplete, playCountdownBeep } = useAudioCues(soundEnabled);
 
-  // Zone index computed early so effects can reference it (hooks must not come after early returns)
-  // Guard against halfMs=0 (e.g. during HMR) which would produce NaN via 0/0
+  // Zone index (0 = top, 1 = bottom) and surface index (0-5, three per arch)
+  // Guard against divide-by-zero during HMR / before duration is chosen
   const zoneIdx = halfMs > 0 ? Math.min(1, Math.floor(elapsed / halfMs)) : 0;
+  const surfaceMs = durationMs / 6;
+  const surfaceIdx = surfaceMs > 0 ? Math.min(5, Math.floor(elapsed / surfaceMs)) : 0;
+  const surfaceRemainingSec = Math.max(
+    0,
+    Math.ceil((surfaceMs * (surfaceIdx + 1) - elapsed) / 1000),
+  );
+  // Keep zoneRemainingSec for motivational message timing
   const zoneRemainingSec = Math.max(
     0,
     Math.ceil((halfMs * (zoneIdx + 1) - elapsed) / 1000),
   );
 
-  // Chime when switching from top → bottom zone
-  const prevZoneRef = useRef(0);
+  // Chime on every surface change:
+  //   surface 3 (top→bottom arch) → grand zone-switch chime
+  //   all others → light surface chime
+  const prevSurfaceRef = useRef(0);
   useEffect(() => {
-    if (running && zoneIdx === 1 && prevZoneRef.current === 0) {
-      playZoneSwitch();
+    if (!running) { prevSurfaceRef.current = 0; return; }
+    if (surfaceIdx > prevSurfaceRef.current) {
+      if (surfaceIdx === 3) {
+        playZoneSwitch();
+      } else {
+        playZoneSurface();
+      }
+      prevSurfaceRef.current = surfaceIdx;
     }
-    prevZoneRef.current = zoneIdx;
-  }, [zoneIdx, running, playZoneSwitch]);
+  }, [surfaceIdx, running, playZoneSwitch, playZoneSurface]);
 
   // Fanfare when the timer completes
   useEffect(() => {
     if (completed) playComplete();
   }, [completed, playComplete]);
 
-  // Countdown beeps in the last 5 seconds of each zone
+  // Countdown beeps in the last 5 seconds of each surface
   const lastBeepSecRef = useRef(-1);
   useEffect(() => {
     if (!running) { lastBeepSecRef.current = -1; return; }
-    if (zoneRemainingSec >= 1 && zoneRemainingSec <= 5 && zoneRemainingSec !== lastBeepSecRef.current) {
-      lastBeepSecRef.current = zoneRemainingSec;
-      playCountdownBeep(zoneRemainingSec);
+    if (surfaceRemainingSec >= 1 && surfaceRemainingSec <= 5 && surfaceRemainingSec !== lastBeepSecRef.current) {
+      lastBeepSecRef.current = surfaceRemainingSec;
+      playCountdownBeep(surfaceRemainingSec);
     }
-  }, [running, zoneRemainingSec, playCountdownBeep]);
+  }, [running, surfaceRemainingSec, playCountdownBeep]);
 
   // ── Motivational messages (themed) ────────────────────────────────────────
   const ZONE_SWITCH_MSGS = theme.zoneSwitchMsgs;
