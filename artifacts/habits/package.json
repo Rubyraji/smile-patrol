@@ -9,6 +9,7 @@
     "build:mobile": "vite build --config vite.cap.config.ts",
     "cap:add:android": "cap add android",
     "cap:sync": "pnpm run build:mobile && cap sync",
+    "cap:sync:live": "cap sync",
     "cap:open:android": "cap open android",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit"
