@@ -11,3 +11,9 @@ id = "GKn66W0MRwkIJR7DhX3SL"
 uri = "file://attached_assets/generated_images/smile_patrol_logo.png"
 type = "image"
 title = "Smile Patrol Logo"
+
+[[outputs]]
+id = "EQDox4P6MZMUln5Lmagbp"
+uri = "file://smile_patrol_internal_testers.csv"
+type = "table"
+title = "Smile Patrol — Internal Testers CSV"
