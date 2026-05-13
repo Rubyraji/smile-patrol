@@ -55,14 +55,60 @@ jobs:
         working-directory: artifacts/habits/android
         run: chmod +x gradlew
 
-      - name: Build debug AAB
+      - name: Generate release keystore (first time only)
+        if: ${{ secrets.KEYSTORE_BASE64 == '' || secrets.KEYSTORE_BASE64 == null }}
         working-directory: artifacts/habits/android
-        run: ./gradlew bundleDebug
+        run: |
+          keytool -genkeypair \
+            -alias smilepatrol \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -keystore smilepatrol-release.jks \
+            -dname "CN=Smile Patrol, OU=App, O=Rubyraji, L=Unknown, ST=Unknown, C=US" \
+            -storepass SmilePatrol2024! \
+            -keypass SmilePatrol2024! \
+            -noprompt
+          echo "KEYSTORE_GENERATED=true" >> $GITHUB_ENV
 
-      - name: Upload AAB
+      - name: Build release AAB (with generated keystore)
+        if: ${{ env.KEYSTORE_GENERATED == 'true' }}
+        working-directory: artifacts/habits/android
+        run: |
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/smilepatrol-release.jks \
+            -Pandroid.injected.signing.store.password="SmilePatrol2024!" \
+            -Pandroid.injected.signing.key.alias="smilepatrol" \
+            -Pandroid.injected.signing.key.password="SmilePatrol2024!"
+
+      - name: Build release AAB (with stored keystore)
+        if: ${{ secrets.KEYSTORE_BASE64 != '' && secrets.KEYSTORE_BASE64 != null }}
+        working-directory: artifacts/habits/android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > smilepatrol-release.jks
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/smilepatrol-release.jks \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+
+      - name: Upload signed AAB
         uses: actions/upload-artifact@v4
         with:
-          name: smile-patrol-aab
-          path: artifacts/habits/android/app/build/outputs/bundle/debug/app-debug.aab
+          name: smile-patrol-release-aab
+          path: artifacts/habits/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload keystore (save this file safely!)
+        if: ${{ env.KEYSTORE_GENERATED == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: smilepatrol-keystore-SAVE-THIS
+          path: artifacts/habits/android/smilepatrol-release.jks
+          if-no-files-found: warn
           retention-days: 30
