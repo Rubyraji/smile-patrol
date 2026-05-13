@@ -9,6 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,11 +23,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses || true
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -54,23 +55,7 @@ jobs:
         working-directory: artifacts/habits/android
         run: chmod +x gradlew
 
-      - name: Build release AAB (signed)
-        if: ${{ secrets.KEYSTORE_FILE != '' }}
-        working-directory: artifacts/habits/android
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > keystore.jks
-          ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=$(pwd)/keystore.jks \
-            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
-            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
-
-      - name: Build debug AAB (no keystore)
-        if: ${{ secrets.KEYSTORE_FILE == '' }}
+      - name: Build debug AAB
         working-directory: artifacts/habits/android
         run: ./gradlew bundleDebug
 
@@ -78,8 +63,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: smile-patrol-aab
-          path: |
-            artifacts/habits/android/app/build/outputs/bundle/release/app-release.aab
-            artifacts/habits/android/app/build/outputs/bundle/debug/app-debug.aab
-          if-no-files-found: warn
+          path: artifacts/habits/android/app/build/outputs/bundle/debug/app-debug.aab
+          if-no-files-found: error
           retention-days: 30
